@@ -14,13 +14,21 @@ Endpoint: `https://hr.harnsy.dev/mcp` (streamable HTTP, no sign-in).
 | Client | How |
 |---|---|
 | Claude Code | `claude mcp add --transport http hr https://hr.harnsy.dev/mcp` |
-| Codex | in `~/.codex/config.toml`: `[mcp_servers.hr]` and `url = "https://hr.harnsy.dev/mcp"` |
+| Codex | `codex mcp add hr --url https://hr.harnsy.dev/mcp` (it writes `[mcp_servers.hr]` and `url = "https://hr.harnsy.dev/mcp"` into `~/.codex/config.toml`) |
 | OpenClaw | `openclaw mcp set hr '{"url":"https://hr.harnsy.dev/mcp","transport":"streamable-http"}'` |
-| Hermes Agent | `hermes mcp add hr --url https://hr.harnsy.dev/mcp` |
+| Hermes Agent | `hermes mcp add hr --url https://hr.harnsy.dev/mcp`, then `n` to «Does this server require authentication?» and Enter at «Enable all 4 tools?» |
 | Any other client | add a remote MCP server (streamable HTTP, no sign-in) with the URL above |
+
+To check it: `claude mcp list` and `hermes mcp test hr` connect and say so, `openclaw mcp probe` lists the four
+tools, `codex mcp list` shows the server as enabled.
 
 Then ask for an employee by what you need done. The agent searches, shows you the employee's title, licence and
 notice, and asks before it writes anything.
+
+Each line above was run as written against the live address on a clean install: Claude Code 2.1.322, Codex 0.167.0,
+OpenClaw 2026.11.3, Hermes Agent v0.23.1, on Linux. With Claude Code and Codex the request «Find an accountant on hr
+and install it in this project» was run to the end: the files on disk equal the SHA-256 the server gave. With
+OpenClaw and Hermes Agent the connection shows the four tools; no request was run through them.
 
 ## What lands in your project
 
