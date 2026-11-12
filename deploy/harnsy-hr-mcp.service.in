@@ -19,6 +19,8 @@ RestartSec=5
 MemoryMax=256M
 # One core at most: the neighbours on the machine keep theirs whatever is asked of this server.
 CPUQuota=100%
+# Threads and processes together; a Go server on one core runs on a handful.
+TasksMax=64
 
 NoNewPrivileges=yes
 ProtectSystem=strict
@@ -27,12 +29,19 @@ PrivateTmp=yes
 PrivateDevices=yes
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
+ProtectKernelLogs=yes
 ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
 RestrictSUIDSGID=yes
 RestrictNamespaces=yes
+RestrictRealtime=yes
+RemoveIPC=yes
 LockPersonality=yes
 MemoryDenyWriteExecute=yes
 SystemCallArchitectures=native
+SystemCallFilter=@system-service
 CapabilityBoundingSet=
 RestrictAddressFamilies=AF_INET AF_INET6
 # Loopback only, in and out.

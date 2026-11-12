@@ -35,3 +35,19 @@ func TestBuildToolchainIsNamed(t *testing.T) {
 		t.Errorf("deploy/README.md must say to build with the newest patch release of a supported Go line, today %s", m[1])
 	}
 }
+
+// TestUnitKeepsTheServerSmall: the unit template bounds what the server may take of the machine it shares (memory,
+// one core, tasks) and takes away what a read-only loopback server never needs.
+func TestUnitKeepsTheServerSmall(t *testing.T) {
+	unit := "\n" + read(t, "deploy/harnsy-hr-mcp.service.in")
+	for _, line := range []string{
+		"MemoryMax=256M", "CPUQuota=100%", "TasksMax=64",
+		"NoNewPrivileges=yes", "ProtectSystem=strict", "CapabilityBoundingSet=", "IPAddressDeny=any",
+		"SystemCallFilter=@system-service", "ProtectProc=invisible", "ProtectKernelLogs=yes", "ProtectClock=yes",
+		"ProtectHostname=yes", "RemoveIPC=yes", "RestrictRealtime=yes",
+	} {
+		if !strings.Contains(unit, "\n"+line+"\n") {
+			t.Errorf("deploy/harnsy-hr-mcp.service.in lacks the line %s", line)
+		}
+	}
+}
