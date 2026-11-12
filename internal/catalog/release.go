@@ -34,6 +34,7 @@ func Load(dir string, key Key, host string, now time.Time) (*Release, error) {
 	if r.Feed.V != 1 || err != nil || !exp.After(now) {
 		return nil, fmt.Errorf("feed.json: v %d, expires %q (now %s)", r.Feed.V, r.Feed.Expires, now.Format(time.RFC3339))
 	}
+	r.Expires = exp
 	revoked := map[string]bool{}
 	for _, v := range r.Feed.Revoked {
 		revoked[v] = true

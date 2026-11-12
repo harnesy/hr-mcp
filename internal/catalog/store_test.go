@@ -1,0 +1,98 @@
+package catalog_test
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
+
+	"github.com/harnesy/hr-mcp/internal/catalog"
+	"github.com/harnesy/hr-mcp/internal/catalog/catalogtest"
+)
+
+// publish writes releases/<seq> under root and points current at it, as the catalog's publisher does.
+func publish(t *testing.T, k *catalogtest.Kit, root string, seq int64, names ...string) string {
+	t.Helper()
+	var packs []catalogtest.Packed
+	for _, n := range names {
+		packs = append(packs, k.Pack(t, "harnsy/"+n, "1.0.0", sample(n), nil))
+	}
+	dir := filepath.Join(root, "releases", time.Unix(seq, 0).UTC().Format("20060102150405"))
+	k.Release(t, dir, packs, func(f *catalog.Feed) { f.Seq = seq })
+	tmp := filepath.Join(root, "current.tmp")
+	os.Remove(tmp)
+	if err := os.Symlink(dir, tmp); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(tmp, filepath.Join(root, "current")); err != nil {
+		t.Fatal(err)
+	}
+	return dir
+}
+
+func newStore(k *catalogtest.Kit, root string) (*catalog.Store, *time.Time) {
+	now := k.Now
+	return catalog.NewStore(root, k.Key, catalogtest.Host, func() time.Time { return now }), &now
+}
+
+func TestStoreFollowsCurrent(t *testing.T) {
+	k, root := catalogtest.New(t), t.TempDir()
+	s, _ := newStore(k, root)
+	if err := s.Refresh(); err == nil || s.Release() != nil {
+		t.Fatalf("no release yet: got err %v, release %v", err, s.Release())
+	}
+	publish(t, k, root, 1, "reviewer")
+	if err := s.Refresh(); err != nil {
+		t.Fatal(err)
+	}
+	if r := s.Release(); r == nil || r.Feed.Seq != 1 || len(r.Employees) != 1 {
+		t.Fatalf("first release: %+v", r)
+	}
+	publish(t, k, root, 2, "reviewer", "tester")
+	if err := s.Refresh(); err != nil {
+		t.Fatal(err)
+	}
+	if r := s.Release(); r.Feed.Seq != 2 || r.Employee("harnsy/tester") == nil {
+		t.Fatalf("second release: seq %d, %d employees", r.Feed.Seq, len(r.Employees))
+	}
+}
+
+func TestStoreKeepsTheLastGoodRelease(t *testing.T) {
+	k, root := catalogtest.New(t), t.TempDir()
+	s, _ := newStore(k, root)
+	publish(t, k, root, 1, "reviewer")
+	if err := s.Refresh(); err != nil {
+		t.Fatal(err)
+	}
+	bad := publish(t, k, root, 2, "reviewer", "tester")
+	catalogtest.Write(t, filepath.Join(bad, "v1", "feed.json.sig"), []byte(`{"kid":"t1","sig":"AAAA"}`))
+	if err := s.Refresh(); err == nil {
+		t.Fatal("a release that does not verify must be reported")
+	}
+	if r := s.Release(); r == nil || r.Feed.Seq != 1 {
+		t.Fatalf("want the last good release (seq 1), got %+v", r)
+	}
+	if err := s.Refresh(); err == nil {
+		t.Fatal("the fault must be reported while current still points at the bad release")
+	}
+	publish(t, k, root, 3, "reviewer", "tester")
+	if err := s.Refresh(); err != nil || s.Release().Feed.Seq != 3 {
+		t.Fatalf("a later good release must be taken: err %v", err)
+	}
+}
+
+func TestStoreStopsServingAnExpiredFeed(t *testing.T) {
+	k, root := catalogtest.New(t), t.TempDir()
+	s, now := newStore(k, root)
+	publish(t, k, root, 1, "reviewer")
+	if err := s.Refresh(); err != nil || s.Release() == nil {
+		t.Fatalf("err %v", err)
+	}
+	*now = now.Add(8 * 24 * time.Hour) // the kit's feeds are good for a week
+	if s.Release() != nil {
+		t.Fatal("an expired feed must not be served")
+	}
+	if err := s.Refresh(); err == nil {
+		t.Fatal("refresh must report the expired feed")
+	}
+}

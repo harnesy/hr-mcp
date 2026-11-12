@@ -6,6 +6,7 @@ package catalog
 import (
 	"crypto/ed25519"
 	"encoding/json"
+	"time"
 )
 
 // Limits of bundle v1.
@@ -198,6 +199,7 @@ type Release struct {
 	Feed      Feed
 	Kid       string
 	Employees []*Employee
+	Expires   time.Time // the feed's expires: past it the release is served no longer
 	byID      map[string]*Employee
 }
 
