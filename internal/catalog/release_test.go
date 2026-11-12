@@ -2,6 +2,7 @@ package catalog_test
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -243,5 +244,22 @@ func TestLoadIgnoresOlderSkillLabels(t *testing.T) {
 	}
 	if s := r.Employee("harnsy/reviewer").Doc.Skills; len(s) != 1 || s[0].Name != "race-hunt" {
 		t.Fatalf("skills %+v, want only race-hunt", s)
+	}
+}
+
+func TestParseKey(t *testing.T) {
+	k := catalogtest.New(t)
+	b64 := base64.StdEncoding.EncodeToString(k.Key.Pub)
+	got, err := catalog.ParseKey("c1", " "+b64+"\n")
+	if err != nil || got.Kid != "c1" || !bytes.Equal(got.Pub, k.Key.Pub) {
+		t.Fatalf("got %+v, %v", got, err)
+	}
+	for _, bad := range []string{"", "not base64!", base64.StdEncoding.EncodeToString([]byte("short"))} {
+		if _, err := catalog.ParseKey("c1", bad); err == nil {
+			t.Fatalf("%q must be refused", bad)
+		}
+	}
+	if _, err := catalog.ParseKey("", b64); err == nil {
+		t.Fatal("a key needs its kid")
 	}
 }

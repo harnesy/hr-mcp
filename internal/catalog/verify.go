@@ -61,3 +61,12 @@ func verifyJWS(key Key, tok string) (Claims, error) {
 	}
 	return c, nil
 }
+
+// ParseKey reads a catalog public key as it is handed out: the base64 of the raw 32-byte Ed25519 key.
+func ParseKey(kid, b64 string) (Key, error) {
+	b, err := base64.StdEncoding.DecodeString(strings.TrimSpace(b64))
+	if err != nil || len(b) != ed25519.PublicKeySize || kid == "" {
+		return Key{}, errors.New("catalog key: want a kid and the base64 of the raw 32-byte Ed25519 public key")
+	}
+	return Key{Kid: kid, Pub: ed25519.PublicKey(b)}, nil
+}
