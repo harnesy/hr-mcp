@@ -118,6 +118,28 @@ func TestHTTPLimits(t *testing.T) {
 	}
 }
 
+// TestBatchIsRefused: a JSON array of calls is refused before the SDK reads it, whatever protocol version the request
+// names. The older versions would answer every call of the array in one response: a small request, a huge answer.
+func TestBatchIsRefused(t *testing.T) {
+	srv := serve(t, stand(t))
+	batch := "[" + listTools + "," + strings.Replace(listTools, `"id":1`, `"id":2`, 1) + "]"
+	for _, version := range []string{"", "2025-03-26", "2025-06-18", "2025-11-25"} {
+		for _, body := range []string{batch, " \r\n\t" + batch} {
+			header := map[string]string{}
+			if version != "" {
+				header["MCP-Protocol-Version"] = version
+			}
+			res, answer := post(t, srv.URL, body, header)
+			if res.StatusCode != http.StatusBadRequest || strings.Contains(answer, "search_employees") {
+				t.Errorf("a batch of two calls, protocol %q: %d %.80q, want 400 and no answer to a call", version, res.StatusCode, answer)
+			}
+		}
+	}
+	if res, answer := post(t, srv.URL, "\n "+listTools, nil); res.StatusCode != http.StatusOK || !strings.Contains(answer, "search_employees") {
+		t.Errorf("one call after white space: %d %.80q, want 200", res.StatusCode, answer)
+	}
+}
+
 type nothing struct{}
 
 func (nothing) Release() *catalog.Release { return nil }

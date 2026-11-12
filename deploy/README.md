@@ -56,6 +56,8 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST $H -H 'Origin: https://example.
   -H 'Content-Type: application/json' --data-binary '{}'                     # 403: a browser page of another site
 head -c 70000 /dev/zero | curl -s -o /dev/null -w '%{http_code}\n' -X POST $H \
   -H 'Content-Type: application/json' --data-binary @-                       # 413: over 64 KB
+curl -s -o /dev/null -w '%{http_code}\n' -X POST $H -H 'Content-Type: application/json' \
+  --data-binary '[{"jsonrpc":"2.0","id":1,"method":"tools/list"}]'           # 400: one message per request, no batch
 ```
 
 `403` on the first call means the proxy passes the public `Host`. `405` on a POST means the host's method rule stands
