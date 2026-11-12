@@ -41,12 +41,15 @@ func ValidID(id string) bool {
 	return ok && partRE.MatchString(publisher) && partRE.MatchString(name)
 }
 
+// ValidVersion reports whether v is a version in the catalog's grammar: MAJOR.MINOR.PATCH.
+func ValidVersion(v string) bool { return semverRE.MatchString(v) }
+
 // checkNames refuses a feed entry whose id or version is outside the grammar.
 func checkNames(e Entry) error {
 	if !ValidID(e.ID) {
 		return fmt.Errorf("id %.130q: want <publisher>/<name> in lowercase latin letters, digits and -", e.ID)
 	}
-	if !semverRE.MatchString(e.Version) {
+	if !ValidVersion(e.Version) {
 		return fmt.Errorf("%s: version %.40q: want MAJOR.MINOR.PATCH", e.ID, e.Version)
 	}
 	return nil

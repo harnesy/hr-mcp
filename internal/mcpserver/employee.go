@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 	"unicode/utf8"
@@ -191,5 +190,5 @@ func (s *server) part(in FileIn) (FileOut, error) {
 		}
 		return out, nil
 	}
-	return FileOut{}, errors.New(in.Path + " is not a file of this employee for this target; take the paths from get_employee")
+	return FileOut{}, fmt.Errorf("path %.120q is not a file of this employee for this target; take the paths from get_employee", in.Path)
 }

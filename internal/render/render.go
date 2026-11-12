@@ -73,7 +73,7 @@ func Render(e *catalog.Employee, t Target) (Tree, error) {
 	case Hermes:
 		tree = hermes(e, name)
 	default:
-		return Tree{}, fmt.Errorf("target %q: want one of %s", t, targetList())
+		return Tree{}, fmt.Errorf("target %.40q: want one of %s", t, targetList())
 	}
 	for _, f := range tree.Files {
 		if !inside(f.Path) {

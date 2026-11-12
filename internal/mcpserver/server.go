@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -83,7 +84,12 @@ func (s *server) release() (*catalog.Release, error) {
 }
 
 // find returns the live release and the employee id@version in it. An empty version means the one that is served.
+// What is not an id or a version in the catalog's grammar is refused before any lookup and is not repeated in the
+// error: a caller may type anything there.
 func (s *server) find(id, version string) (*catalog.Release, *catalog.Employee, error) {
+	if !catalog.ValidID(id) {
+		return nil, nil, errors.New("not an employee id: an id is publisher/name in lowercase letters, digits and dashes, as search_employees lists it")
+	}
 	rel, err := s.release()
 	if err != nil {
 		return nil, nil, err
@@ -92,16 +98,34 @@ func (s *server) find(id, version string) (*catalog.Release, *catalog.Employee, 
 	if e == nil {
 		return nil, nil, fmt.Errorf("no employee %q in the catalog; find its id with search_employees", id)
 	}
-	if version != "" && version != e.Entry.Version {
-		return nil, nil, fmt.Errorf("%s@%s is not served; the catalog serves %s@%s", id, version, id, e.Entry.Version)
+	switch {
+	case version == "" || version == e.Entry.Version:
+		return rel, e, nil
+	case !catalog.ValidVersion(version):
+		return nil, nil, fmt.Errorf("version: not a version (MAJOR.MINOR.PATCH); the catalog serves %s@%s", id, e.Entry.Version)
 	}
-	return rel, e, nil
+	return nil, nil, fmt.Errorf("%s@%s is not served; the catalog serves %s@%s", id, version, id, e.Entry.Version)
 }
 
-// logged records a tool call's outcome and passes the error on.
+// Most of what a caller typed that one log line keeps.
+const (
+	logIDMax  = 130 // the longest id of the grammar is 129 bytes
+	logWhyMax = 400
+)
+
+// short cuts a text to at most max bytes.
+func short(s string, max int) string {
+	if len(s) <= max {
+		return s
+	}
+	return strings.ToValidUTF8(s[:max], "")
+}
+
+// logged records a tool call's outcome and passes the error on. The log keeps a short start of what the caller named.
 func (s *server) logged(tool, id string, err error) error {
+	id = short(id, logIDMax)
 	if err != nil {
-		s.log.Info("tool", "tool", tool, "employee", id, "status", "refused", "why", err.Error())
+		s.log.Info("tool", "tool", tool, "employee", id, "status", "refused", "why", short(err.Error(), logWhyMax))
 	} else {
 		s.log.Info("tool", "tool", tool, "employee", id, "status", "ok")
 	}
