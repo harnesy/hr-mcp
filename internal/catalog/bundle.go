@@ -67,7 +67,7 @@ func openBundle(key Key, host string, e Entry, file []byte) (*Employee, error) {
 	if !ok {
 		return nil, fmt.Errorf("no manifest.json")
 	}
-	emp := &Employee{Entry: e, ManifestSHA256: hexSum(mb), Files: map[string][]byte{}}
+	emp := &Employee{Entry: e, ManifestSHA256: hexSum(mb), Files: map[string][]byte{}, index: indexOf(e)}
 	m := &emp.Manifest
 	if err := json.Unmarshal(mb, m); err != nil {
 		return nil, fmt.Errorf("manifest.json: %w", err)

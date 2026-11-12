@@ -169,7 +169,7 @@ func card(id, version string, doc catalog.Bundle, title string, tags []string, f
 		tags = []string{}
 	}
 	e := catalog.Entry{ID: id, Kind: "employee", Version: version, Title: title, Summary: doc.Role.Tagline,
-		Persona: catalog.PersonaCard{Name: doc.Persona.Name}, Department: doc.Role.Department, Tags: tags, Skills: []string{},
+		Persona: catalog.PersonaCard{Name: doc.Persona.Name}, Department: doc.Role.Department, Industries: doc.Role.Industries, Keywords: doc.Role.Keywords, Tags: tags, Skills: []string{},
 		Publisher: publisher, PublisherName: publisher, License: doc.License, Attribution: doc.Attribution,
 		URL:    "https://" + Host + "/packs/" + id + "/" + version + ".harnsy",
 		CVURL:  "https://" + Host + "/e/" + id,

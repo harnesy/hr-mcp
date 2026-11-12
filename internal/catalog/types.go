@@ -130,12 +130,14 @@ type Sample struct {
 
 // Role is the job.
 type Role struct {
-	Name        string `json:"name"`
-	Department  string `json:"department"`
-	Mandate     string `json:"mandate"`
-	Deliverable string `json:"deliverable"`
-	Prompt      string `json:"prompt"`
-	Tagline     string `json:"tagline"`
+	Name        string   `json:"name"`
+	Department  string   `json:"department"`
+	Mandate     string   `json:"mandate"`
+	Deliverable string   `json:"deliverable"`
+	Prompt      string   `json:"prompt"`
+	Tagline     string   `json:"tagline"`
+	Industries  []string `json:"industries"`
+	Keywords    []string `json:"keywords"`
 }
 
 // Requires is what the employee needs to work. The harnsy Max list of a bundle is not read: it means nothing outside harnsy.
@@ -192,6 +194,7 @@ type Employee struct {
 	ManifestSHA256 string
 	Doc            Bundle
 	Files          map[string][]byte // every file the manifest lists, by its path in the bundle
+	index          searchIndex
 }
 
 // Release is a verified release: the feed and every employee it serves, in the feed's order.
