@@ -3,7 +3,7 @@
   "name": "dev.harnsy/hr",
   "title": "hr.harnsy.dev catalog",
   "description": "Search the hr.harnsy.dev catalog of AI agent employees and read one as files to install.",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "repository": {
     "url": "https://github.com/harnesy/hr-mcp",
     "source": "github"
