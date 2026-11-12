@@ -121,3 +121,31 @@ func TestSearchLimits(t *testing.T) {
 		}
 	}
 }
+
+// TestSearchPrefersTheExactWord: «accountant» and «account executive» share a stem; the one the person named comes first.
+func TestSearchPrefersTheExactWord(t *testing.T) {
+	k, dir := catalogtest.New(t), t.TempDir()
+	k.Release(t, dir, []catalogtest.Packed{
+		k.Pack(t, "harnsy/account-executive", "1.0.0", person("account executive", "sales", "Prepares your sales calls.", "Call preparation"), nil),
+		k.Pack(t, "harnsy/accountant", "1.0.0", person("accountant", "finance", "Closes your month on a calendar.", "Month-end close"), nil),
+	}, nil)
+	r, err := catalog.Load(dir, k.Key, catalogtest.Host, k.Now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for text, want := range map[string]string{
+		"accountant":             "accountant account-executive",
+		"find an Accountants":    "accountant account-executive",
+		"account executive":      "account-executive accountant",
+		"accounting":             "account-executive accountant", // neither is named: the feed's order
+		"an executive for sales": "account-executive",
+	} {
+		p, err := r.Search(catalog.Query{Text: text})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := ids(p); got != want {
+			t.Errorf("%q: got %q, want %q", text, got, want)
+		}
+	}
+}

@@ -44,22 +44,28 @@ const (
 	weightOther   = 1 // department, industries, the persona's name
 )
 
-// searchIndex is an employee's searchable words by weight, made once when the release loads.
-type searchIndex map[string]int
+// searchIndex is an employee's searchable words, made once when the release loads.
+type searchIndex struct {
+	weights map[string]int  // stems, each with the weight of the best field it stands in
+	named   map[string]bool // the words of its title and id as written, in the singular
+}
 
 func indexOf(e Entry) searchIndex {
-	ix := searchIndex{}
+	ix := searchIndex{weights: map[string]int{}, named: map[string]bool{}}
 	add := func(weight int, texts ...string) {
 		for _, t := range texts {
-			for _, w := range words(t) {
-				if ix[w] < weight {
-					ix[w] = weight
+			for _, w := range tokens(t) {
+				if w = stem(w); ix.weights[w] < weight {
+					ix.weights[w] = weight
 				}
 			}
 		}
 	}
 	_, name, _ := strings.Cut(e.ID, "/")
 	add(weightName, e.Title, name)
+	for _, w := range tokens(e.Title + " " + name) {
+		ix.named[singular(w)] = true
+	}
 	add(weightSkill, e.Skills...)
 	add(weightSkill, e.Tags...)
 	add(weightSkill, e.Keywords...)
@@ -69,13 +75,17 @@ func indexOf(e Entry) searchIndex {
 	return ix
 }
 
-// words splits text into lowercase stems of letters and digits.
-func words(text string) []string {
-	parts := strings.FieldsFunc(strings.ToLower(text), func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) })
-	for i, p := range parts {
-		parts[i] = stem(p)
+// tokens splits text into lowercase words of letters and digits.
+func tokens(text string) []string {
+	return strings.FieldsFunc(strings.ToLower(text), func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) })
+}
+
+// singular drops a plural s, so that «accountants» names the «accountant».
+func singular(w string) string {
+	if cut, ok := strings.CutSuffix(w, "s"); ok && len(cut) >= 4 {
+		return cut
 	}
-	return parts
+	return w
 }
 
 // stem cuts a common English ending, so that «accountant» finds «accounting» and «reviews» finds «reviewer». It is a
@@ -89,13 +99,48 @@ func stem(w string) string {
 	return w
 }
 
+// term is one word of a request: as written, in the singular, and its stem.
+type term struct{ word, stem string }
+
+// terms reads a request's words, without the ones that tell nothing.
+func terms(text string) []term {
+	var out []term
+	for _, w := range tokens(text) {
+		if s := stem(w); !stopWords[s] {
+			out = append(out, term{singular(w), s})
+		}
+	}
+	return out
+}
+
+// hit is how well one employee answers a request: how many of its words match, how well, and how many of them the
+// employee is named by.
+type hit struct {
+	emp                   *Employee
+	matched, score, named int
+}
+
+func (ix searchIndex) hit(e *Employee, terms []term) hit {
+	h := hit{emp: e}
+	for _, t := range terms {
+		if s := ix.score(t.stem); s > 0 {
+			h.matched++
+			h.score += s
+		}
+		if ix.named[t.word] {
+			h.named++
+		}
+	}
+	return h
+}
+
 // score is how well the index answers one word: the best weight among the words it matches.
 func (ix searchIndex) score(word string) int {
-	best := ix[word]
+	best := ix.weights[word]
 	if len(word) < 4 {
 		return best // a short word («go», «ui») matches only itself
 	}
-	for w, weight := range ix {
+	for w, weight := range ix.weights {
 		if weight > best && len(w) >= 4 && (strings.HasPrefix(w, word) || strings.HasPrefix(word, w)) {
 			best = weight
 		}
@@ -104,39 +149,28 @@ func (ix searchIndex) score(word string) int {
 }
 
 // Search finds employees: those in the department, when one is given, that match at least one word of the text. The
-// ones that match more words come first, then the better matches, then the feed's order.
+// ones that match more words come first, then the better matches, then the ones named by the very word («accountant»
+// before «account executive»), then the feed's order.
 func (r *Release) Search(q Query) (Page, error) {
-	var terms []string
-	for _, w := range words(q.Text) {
-		if !stopWords[w] {
-			terms = append(terms, w)
-		}
-	}
-	type hit struct {
-		emp            *Employee
-		matched, score int
-	}
+	asked := terms(q.Text)
 	var hits []hit
 	for _, e := range r.Employees {
 		if q.Department != "" && !strings.EqualFold(q.Department, e.Entry.Department) {
 			continue
 		}
-		h := hit{emp: e}
-		for _, t := range terms {
-			if s := e.index.score(t); s > 0 {
-				h.matched++
-				h.score += s
-			}
-		}
-		if h.matched > 0 || len(terms) == 0 {
+		if h := e.index.hit(e, asked); h.matched > 0 || len(asked) == 0 {
 			hits = append(hits, h)
 		}
 	}
 	sort.SliceStable(hits, func(i, j int) bool {
-		if hits[i].matched != hits[j].matched {
-			return hits[i].matched > hits[j].matched
+		a, b := hits[i], hits[j]
+		if a.matched != b.matched {
+			return a.matched > b.matched
 		}
-		return hits[i].score > hits[j].score
+		if a.score != b.score {
+			return a.score > b.score
+		}
+		return a.named > b.named
 	})
 	from, err := r.offset(q.Cursor, len(hits))
 	if err != nil {
