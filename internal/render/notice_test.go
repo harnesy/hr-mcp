@@ -29,15 +29,17 @@ func TestNotice(t *testing.T) {
 		}, []string{"LICENSE"}},
 		{"harnsy/sample-scripts", []string{
 			"Licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).",
-			"`LICENSE` file in that skill's folder (the bundle's licence: CC-BY-4.0 AND MIT)",
-			"No rights in the names of the people mentioned are granted or implied.",
+			"it is the `LICENSE` file in that skill's folder, and it applies to those parts (the bundle's licence: CC-BY-4.0 AND MIT).",
+			"Note from harnsy: No rights in the names of the people mentioned are granted or implied.",
+			"and the picture of this employee (not included here), are not covered by this licence.",
 			"- Label Sizes Table, https://example.org/labels, MIT, modified",
 		}, nil},
 		{"octo/sample-guest", []string{
-			"Sample guest 1.0.0 by Octo Press, published on hr.harnsy.dev.",
-			"Dedicated to the public domain under CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/).",
+			"Sample guest 1.0.0 by Octo Press. Dedicated to the public domain under CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/).",
+			"hr.harnsy.dev lists this work; it is not made or endorsed by harnsy.",
+			"The names and logos «harnsy» and «hr.harnsy.dev» are not covered by this licence.",
 			"Source: https://hr.harnsy.dev/e/octo/sample-guest.",
-		}, []string{"Pavel Buchnev", "CC BY 4.0"}},
+		}, []string{"Pavel Buchnev", "CC BY 4.0", "©", "picture"}},
 	}
 	for _, c := range cases {
 		t.Run(c.id, func(t *testing.T) {

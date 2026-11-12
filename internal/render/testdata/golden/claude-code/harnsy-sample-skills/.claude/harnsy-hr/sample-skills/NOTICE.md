@@ -6,4 +6,4 @@ Built on:
 - A Made-up Guide to Shelves — Example Author, https://example.org/shelves, CC-BY-4.0, modified
 - Loan Desk Notes, https://example.org/loans, CC0-1.0, not modified
 
-The names «harnsy» and «hr.harnsy.dev» and the employee's picture are not covered by this licence.
+The names and logos «harnsy» and «hr.harnsy.dev», and the picture of this employee (not included here), are not covered by this licence.
