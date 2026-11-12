@@ -1,0 +1,44 @@
+# harnsy-hr-mcp: the hr.harnsy.dev employee catalog over MCP. A template: put your values in place of @BIN@ (the binary),
+# @USER@ (its own system user), @ROOT@ (the catalog's root on disk: the folder that holds current → releases/<seq>),
+# @PUB@ and @KID@ (the catalog public key, base64, and its id), @HOST@ (the catalog's host) and @PORT@.
+# It listens on loopback only; the web server in front ends TLS and limits the request rate (nginx-mcp-location.conf.in).
+# It holds no secret, writes nothing and opens no outgoing connection: the unit below takes all three away.
+[Unit]
+Description=hr.harnsy.dev employee catalog over MCP (harnsy-hr-mcp)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=@USER@
+Group=@USER@
+ExecStart=@BIN@ --root @ROOT@ --pub @PUB@ --kid @KID@ --host @HOST@ --listen 127.0.0.1:@PORT@
+Restart=on-failure
+RestartSec=5
+# The whole catalog is held in memory (about 35 MB for 142 employees).
+MemoryMax=256M
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_INET AF_INET6
+# Loopback only, in and out.
+IPAddressDeny=any
+IPAddressAllow=localhost
+# No ReadWritePaths: it writes nothing. @USER@ must be able to read @ROOT@ and must NOT be able to read the catalog's
+# signing key.
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

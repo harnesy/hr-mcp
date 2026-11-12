@@ -1,0 +1,29 @@
+# Inside the catalog host's `server { listen 443 ssl; … }` block. @PORT@ is the port of harnsy-hr-mcp.service.
+# Needs nginx-mcp-limits.conf in the http context.
+#
+# Two things this location depends on; both are covered by tests in internal/mcpserver/http_test.go:
+#
+# 1. Do NOT add `proxy_set_header Host $host;` here. Leave nginx's default (`Host: 127.0.0.1:@PORT@`). The server
+#    answers 403 to a request that arrives on loopback with a Host that is not a loopback name: the guard against DNS
+#    rebinding of a local server. With the public Host passed on, every call fails with 403.
+# 2. The endpoint takes POST only. If the server block refuses other methods than GET and HEAD for the whole host
+#    (`if ($request_method !~ ^(GET|HEAD)$) { return 405; }`), that rule runs before any location: let /mcp through
+#    it, for example with a map in the http context:
+#        map "$request_method:$uri" $hr_method_refused { default 1; ~^(GET|HEAD): 0; "POST:/mcp" 0; }
+#    and `if ($hr_method_refused) { return 405; }` in the server block.
+location = /mcp {
+    limit_req zone=harnsy_hr_mcp burst=30 nodelay;
+    limit_req zone=harnsy_hr_mcp_all burst=100 nodelay;
+    limit_req_status 429;
+
+    client_max_body_size 64k;            # the server refuses more with 413 itself; nginx stops it earlier
+    proxy_pass http://127.0.0.1:@PORT@;
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_connect_timeout 2s;
+    proxy_send_timeout 15s;
+    proxy_read_timeout 15s;              # the server ends a call after 10 s
+    proxy_buffers 64 8k;                 # an answer is plain JSON, up to about 200 KB: keep it in memory
+    add_header Cache-Control "no-store" always;
+    add_header X-Content-Type-Options "nosniff" always;
+}
