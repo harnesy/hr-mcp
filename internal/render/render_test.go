@@ -186,3 +186,25 @@ func TestRenderRefusesAnUnknownTarget(t *testing.T) {
 		t.Fatal("an unknown target must be refused")
 	}
 }
+
+// TestClaudeCodeKeepsItsOwnFolderSmall: Claude Code asks a person before every write under .claude/ and refuses some
+// of them outright in unattended runs. Only what Claude Code reads there goes there: the subagent and its skills. The
+// notice and the casebook are ordinary project files, so the credit is never the file that could not be written.
+func TestClaudeCodeKeepsItsOwnFolderSmall(t *testing.T) {
+	r := staff(t)
+	for _, e := range r.Employees {
+		tree := mustRender(t, e, render.ClaudeCode)
+		_, name, _ := strings.Cut(e.Entry.ID, "/")
+		for _, f := range tree.Files {
+			inAgents := f.Path == ".claude/agents/"+name+".md"
+			inSkills := strings.HasPrefix(f.Path, ".claude/skills/")
+			inHome := strings.HasPrefix(f.Path, "harnsy-hr/"+name+"/")
+			if !inAgents && !inSkills && !inHome {
+				t.Errorf("%s: %q is neither the subagent, a skill, nor under harnsy-hr/%s/", e.Entry.ID, f.Path, name)
+			}
+		}
+		if want := "harnsy-hr/" + name + "/NOTICE.md"; tree.NoticeFile != want {
+			t.Errorf("%s: the notice is at %q, want %q", e.Entry.ID, tree.NoticeFile, want)
+		}
+	}
+}

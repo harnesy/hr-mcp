@@ -57,7 +57,7 @@ Answers what the library holds and where.
 
 ## Casebook
 
-Worked cases are in `.claude/harnsy-hr/sample-plain/docs/persona-casebook.md`. Read it when a case like these comes up, before a decision the principles above do not settle.
+Worked cases are in `harnsy-hr/sample-plain/docs/persona-casebook.md`. Read it when a case like these comes up, before a decision the principles above do not settle.
 
 ---
 

@@ -70,7 +70,7 @@ func (s *server) hint(_ context.Context, _ *mcp.CallToolRequest, in HintIn) (*mc
 	where := "Write every file at its path under the project's root: the employee lands in the folder " + name + "/."
 	if h.target == render.ClaudeCode {
 		persona = ".claude/agents/" + name + ".md"
-		where = "Write every file at its path under the project's root: the subagent is " + persona + ", its skills go to .claude/skills/, its notice and casebook to .claude/harnsy-hr/" + name + "/."
+		where = "Write every file at its path under the project's root: the subagent is " + persona + ", its skills go to .claude/skills/, its notice and casebook to harnsy-hr/" + name + "/. Claude Code asks the person before a write under .claude/: wait for the yes, and do not write those files another way."
 	}
 	out.Steps = []string{
 		fmt.Sprintf(`Call get_employee with {"id": "%s", "target": "%s"}. Show the person the employee's title, licence and notice, and ask before writing anything.`, id, h.target),
