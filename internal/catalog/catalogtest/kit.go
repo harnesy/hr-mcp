@@ -118,10 +118,7 @@ func Unzip(t testing.TB, file []byte) map[string][]byte {
 func (k *Kit) Pack(t testing.TB, id, version string, src map[string][]byte, edit func(files map[string][]byte)) Packed {
 	t.Helper()
 	files := map[string][]byte{}
-	var listing struct {
-		Title string   `json:"title"`
-		Tags  []string `json:"tags"`
-	}
+	var listing Listing
 	for name, b := range src {
 		if name == "listing.json" {
 			if err := json.Unmarshal(b, &listing); err != nil {
@@ -156,11 +153,23 @@ func (k *Kit) Pack(t testing.TB, id, version string, src map[string][]byte, edit
 		edit(files)
 	}
 	file := Zip(t, order, files)
-	return Packed{File: file, Entry: card(id, version, doc, listing.Title, listing.Tags, file)}
+	return Packed{File: file, Entry: card(id, version, doc, listing, file)}
 }
 
-func card(id, version string, doc catalog.Bundle, title string, tags []string, file []byte) catalog.Entry {
+// Listing is the part of a version's listing.json the feed's card takes.
+type Listing struct {
+	Title         string   `json:"title"`
+	Tags          []string `json:"tags"`
+	PublisherName string   `json:"publisher_name"`
+	LicenseNote   string   `json:"license_note"`
+}
+
+func card(id, version string, doc catalog.Bundle, l Listing, file []byte) catalog.Entry {
 	publisher, _, _ := strings.Cut(id, "/")
+	title, tags := l.Title, l.Tags
+	if l.PublisherName == "" {
+		l.PublisherName = publisher
+	}
 	if title == "" {
 		r, n := utf8.DecodeRuneInString(doc.Role.Name)
 		title = string(unicode.ToUpper(r)) + doc.Role.Name[n:]
@@ -170,7 +179,8 @@ func card(id, version string, doc catalog.Bundle, title string, tags []string, f
 	}
 	e := catalog.Entry{ID: id, Kind: "employee", Version: version, Title: title, Summary: doc.Role.Tagline,
 		Persona: catalog.PersonaCard{Name: doc.Persona.Name}, Department: doc.Role.Department, Industries: doc.Role.Industries, Keywords: doc.Role.Keywords, Tags: tags, Skills: []string{},
-		Publisher: publisher, PublisherName: publisher, License: doc.License, Attribution: doc.Attribution,
+		Publisher: publisher, PublisherName: l.PublisherName, LicenseNote: l.LicenseNote, License: doc.License, Attribution: doc.Attribution,
+		Published: "2026-10-08", Updated: "2026-11-01",
 		URL:    "https://" + Host + "/packs/" + id + "/" + version + ".harnsy",
 		CVURL:  "https://" + Host + "/e/" + id,
 		SHA256: Sum(file), Size: int64(len(file))}
@@ -225,6 +235,25 @@ func Write(t testing.TB, file string, b []byte) {
 	if err := os.WriteFile(file, b, 0o644); err != nil {
 		t.Fatal(err)
 	}
+}
+
+// Catalog packs every employee under dir, laid out as the catalog repository's employees/ folder
+// (<publisher>/<name>/<version>/), in the order of their ids.
+func (k *Kit) Catalog(t testing.TB, dir string) []Packed {
+	t.Helper()
+	versions, err := filepath.Glob(filepath.Join(dir, "*", "*", "*", "bundle.json"))
+	if err != nil || len(versions) == 0 {
+		t.Fatalf("%s: no employees (%v)", dir, err)
+	}
+	sort.Strings(versions)
+	var packs []Packed
+	for _, bj := range versions {
+		vdir := filepath.Dir(bj)
+		rel, _ := filepath.Rel(dir, vdir)
+		parts := strings.Split(filepath.ToSlash(rel), "/")
+		packs = append(packs, k.Pack(t, parts[0]+"/"+parts[1], parts[2], Source(t, vdir), nil))
+	}
+	return packs
 }
 
 // Source reads a version folder in the catalog repository's layout (bundle.json, listing.json, docs/, skills/): every

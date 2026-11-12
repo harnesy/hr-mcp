@@ -53,6 +53,8 @@ type Entry struct {
 	Publisher     string        `json:"publisher"`
 	AvatarURL     string        `json:"avatar_url,omitempty"`
 	CVURL         string        `json:"cv_url,omitempty"`
+	Subtitle      string        `json:"subtitle,omitempty"`
+	LicenseNote   string        `json:"license_note,omitempty"`
 	License       string        `json:"license,omitempty"`
 	Attribution   []Attribution `json:"attribution,omitempty"`
 }
