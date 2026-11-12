@@ -27,7 +27,7 @@ const (
 type EmployeeIn struct {
 	ID      string `json:"id" jsonschema:"the employee's id from search_employees, e.g. harnsy/accountant"`
 	Version string `json:"version,omitempty" jsonschema:"the version to read; left out: the one the catalog serves"`
-	Target  string `json:"target,omitempty" jsonschema:"what the files are laid out for: generic (default) or claude-code; ask install_hint which one fits a client"`
+	Target  string `json:"target,omitempty" jsonschema:"what the files are laid out for: generic (default), claude-code or openclaw; ask install_hint which one fits a client"`
 }
 
 // EmployeeOut is the answer of get_employee.
@@ -35,6 +35,7 @@ type EmployeeOut struct {
 	Employee    Card                  `json:"employee"`
 	Target      string                `json:"target"`
 	PersonaFile string                `json:"persona_file" jsonschema:"the path of the file that says who the employee is"`
+	JobFile     string                `json:"job_file" jsonschema:"the path of the file that holds the employee's job; the persona file where one file holds both"`
 	Files       []FileOut             `json:"files" jsonschema:"every file to write, by its path from the place the employee is installed to"`
 	License     string                `json:"license" jsonschema:"the licence of the employee's text, SPDX"`
 	Attribution []catalog.Attribution `json:"attribution" jsonschema:"the works the text is built on"`
@@ -94,7 +95,7 @@ func (s *server) employee(_ context.Context, _ *mcp.CallToolRequest, in Employee
 	if err != nil {
 		return nil, EmployeeOut{Files: []FileOut{}, Attribution: []catalog.Attribution{}}, s.logged("get_employee", in.ID, err)
 	}
-	out := EmployeeOut{Employee: card(e), Target: string(t.Target), PersonaFile: t.Persona, License: e.Doc.License,
+	out := EmployeeOut{Employee: card(e), Target: string(t.Target), PersonaFile: t.Persona, JobFile: t.Job, License: e.Doc.License,
 		Attribution: e.Doc.Attribution, Notice: t.Notice, CVURL: e.Entry.CVURL,
 		Bundle: BundleRef{URL: e.Entry.URL, SHA256: e.Entry.SHA256, Size: e.Entry.Size},
 		Feed:   FeedRef{Seq: rel.Feed.Seq, Kid: rel.Kid},
@@ -103,7 +104,7 @@ func (s *server) employee(_ context.Context, _ *mcp.CallToolRequest, in Employee
 	if out.Attribution == nil {
 		out.Attribution = []catalog.Attribution{}
 	}
-	// The persona file and the notice always come; then what fits, in path order.
+	// The persona file, the job and the notice always come; then what fits, in path order.
 	left := inlineBudget
 	inline := func(i int, must bool) {
 		f := t.Files[i]
@@ -114,7 +115,7 @@ func (s *server) employee(_ context.Context, _ *mcp.CallToolRequest, in Employee
 	}
 	for i, f := range t.Files {
 		out.Files[i] = FileOut{Path: f.Path, Bytes: len(f.Content), SHA256: sum(f.Content)}
-		if f.Path == t.Persona || f.Path == t.NoticeFile {
+		if f.Path == t.Persona || f.Path == t.Job || f.Path == t.NoticeFile {
 			inline(i, true)
 		}
 	}

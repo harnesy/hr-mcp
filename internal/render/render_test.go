@@ -144,13 +144,17 @@ func TestTreeShape(t *testing.T) {
 			if !ok {
 				t.Fatalf("%s for %s: persona file %q is not in the tree", e.Entry.ID, target, tree.Persona)
 			}
-			for _, want := range []string{e.Doc.Role.Prompt, "AI agent", e.Entry.CVURL} {
-				if !strings.Contains(persona, want) {
-					t.Errorf("%s for %s: %s lacks %q", e.Entry.ID, target, tree.Persona, want)
-				}
+			job, ok := files[tree.Job]
+			if !ok || !strings.Contains(job, e.Doc.Role.Prompt) {
+				t.Fatalf("%s for %s: the job file %q must be in the tree and hold the prompt unchanged", e.Entry.ID, target, tree.Job)
 			}
-			if last := lastLine(persona); !strings.Contains(last, e.Entry.CVURL) || !strings.Contains(last, e.Entry.Title+" "+e.Entry.Version) {
-				t.Errorf("%s for %s: %s must end with the credit line, ends with %q", e.Entry.ID, target, tree.Persona, last)
+			for path, text := range map[string]string{tree.Persona: persona, tree.Job: job} {
+				if !strings.Contains(text, "AI agent") {
+					t.Errorf("%s for %s: %s must say it is an AI agent", e.Entry.ID, target, path)
+				}
+				if last := lastLine(text); !strings.Contains(last, e.Entry.CVURL) || !strings.Contains(last, e.Entry.Title+" "+e.Entry.Version) {
+					t.Errorf("%s for %s: %s must end with the credit line, ends with %q", e.Entry.ID, target, path, last)
+				}
 			}
 			notice, ok := files[tree.NoticeFile]
 			if !ok || !strings.Contains(notice, tree.Notice) {

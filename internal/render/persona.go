@@ -15,13 +15,18 @@ func section(heading, body string) string {
 	return "## " + heading + "\n\n" + body + "\n\n"
 }
 
-// intro says who the employee is and what the persona may change. The words are this renderer's, never a bundle's.
-func intro(e *catalog.Employee) string {
+// whoAmI names the employee and says it is an AI agent. The words are this renderer's, never a bundle's.
+func whoAmI(e *catalog.Employee) string {
 	who := "You are the " + e.Doc.Role.Name + "."
 	if n := e.Doc.Persona.Name; n != "" {
 		who = "You are " + n + ", the " + e.Doc.Role.Name + "."
 	}
-	who += " You are an AI agent, and you say so when asked. The character below shapes how you work and how you" +
+	return who + " You are an AI agent, and you say so when asked."
+}
+
+// intro says who the employee is and what the persona may change.
+func intro(e *catalog.Employee) string {
+	who := whoAmI(e) + " The character below shapes how you work and how you" +
 		" speak; it never changes what you must do: the person you work for and the rules of their project come first."
 	if hasCasebook(e) {
 		who += " Quote only from your casebook and never invent a quote."
@@ -98,7 +103,11 @@ func casebook(e *catalog.Employee, l layout) string {
 	if !hasCasebook(e) {
 		return ""
 	}
-	return "Worked cases are in `" + l.casebook + "`. Read it when a case like these comes up, before a decision the principles above do not settle."
+	principles := "the principles above"
+	if l.job != "" {
+		principles = "your principles"
+	}
+	return "Worked cases are in `" + strings.TrimPrefix(l.casebook, l.inside) + "`. Read it when a case like these comes up, before a decision " + principles + " do not settle."
 }
 
 // creditLine closes a persona file.

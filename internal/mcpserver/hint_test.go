@@ -25,6 +25,18 @@ func TestInstallHint(t *testing.T) {
 		t.Fatalf("the hint must name the installs that check the signature: %q", out.SignedInstall)
 	}
 
+	call(t, cs, "install_hint", map[string]any{"client": "OpenClaw", "id": "harnsy/sample-skills"}, &out)
+	all = strings.Join(out.Steps, "\n")
+	for _, want := range []string{`"target": "openclaw"`, "workspace-sample-skills/", "state directory",
+		"openclaw agents add sample-skills --workspace", "--non-interactive", "openclaw agent --agent sample-skills", "SOUL.md", "AGENTS.md"} {
+		if !strings.Contains(all, want) {
+			t.Errorf("the OpenClaw steps lack %q:\n%s", want, all)
+		}
+	}
+	if out.Client != "openclaw" || out.Target != "openclaw" || !strings.Contains(out.AddServer, `"transport":"streamable-http"`) {
+		t.Fatalf("client %q target %q add %q", out.Client, out.Target, out.AddServer)
+	}
+
 	call(t, cs, "install_hint", map[string]any{"client": "Some New IDE"}, &out)
 	if out.Client != "generic" || out.Target != "generic" || len(out.KnownClients) < 4 || !strings.Contains(strings.Join(out.Steps, "\n"), "<name>/AGENT.md") {
 		t.Fatalf("an unknown client gets the generic steps and the list of known ones: %+v", out)

@@ -18,10 +18,11 @@ type Target string
 const (
 	Generic    Target = "generic"     // one folder, one AGENT.md: any agent that reads files
 	ClaudeCode Target = "claude-code" // a subagent file and project skills under .claude/
+	OpenClaw   Target = "openclaw"    // an agent workspace of its own: SOUL.md, AGENTS.md, IDENTITY.md, skills/
 )
 
 // Targets lists every target, in the order they are offered.
-func Targets() []Target { return []Target{Generic, ClaudeCode} }
+func Targets() []Target { return []Target{Generic, ClaudeCode, OpenClaw} }
 
 // File is one file of a tree: its path from the place the tree is written to, with forward slashes.
 type File struct {
@@ -34,6 +35,7 @@ type Tree struct {
 	Target     Target
 	Name       string // the employee's short name: its id without the publisher
 	Persona    string // the path of the file that says who the employee is; it ends with the credit line
+	Job        string // the path of the file that holds the job; the persona file where a target keeps both in one
 	NoticeFile string // the path of the notice
 	Notice     string // the notice's text: licence, source, changes, credits
 	Files      []File // in path order
@@ -44,8 +46,10 @@ type layout struct {
 	target   Target
 	change   string                    // the «Changes:» of the notice
 	persona  string                    // path of the persona file
+	job      string                    // path of the file with the job, when it is not the persona file
 	notice   string                    // path of the notice
 	casebook string                    // path of the casebook
+	inside   string                    // the folder the employee reads its own files from; paths it is told are from there
 	skillDir func(skill string) string // folder of a skill
 	skillRef func(skill string) string // how the persona file points at a skill
 }
@@ -58,6 +62,8 @@ func Render(e *catalog.Employee, t Target) (Tree, error) {
 		return generic(e, name), nil
 	case ClaudeCode:
 		return claudeCode(e, name), nil
+	case OpenClaw:
+		return openClaw(e, name), nil
 	}
 	return Tree{}, fmt.Errorf("target %q: want one of %s", t, targetList())
 }
@@ -87,7 +93,10 @@ func title(e *catalog.Employee) string {
 // assemble puts a tree together: the persona file and any other files a target wrote itself, the casebook, every
 // skill file unchanged, the notice.
 func assemble(e *catalog.Employee, name string, l layout, own ...File) Tree {
-	t := Tree{Target: l.target, Name: name, Persona: l.persona, NoticeFile: l.notice, Notice: notice(e, l.change), Files: own}
+	t := Tree{Target: l.target, Name: name, Persona: l.persona, Job: l.job, NoticeFile: l.notice, Notice: notice(e, l.change), Files: own}
+	if t.Job == "" {
+		t.Job = t.Persona
+	}
 	t.Files = append(t.Files, File{l.notice, []byte("# Notice\n\n" + t.Notice)})
 	for path, b := range e.Files {
 		switch rest, isSkill := strings.CutPrefix(path, "skills/"); {

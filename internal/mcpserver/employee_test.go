@@ -57,8 +57,13 @@ func TestGetEmployeeTargetsAndRefusals(t *testing.T) {
 	cs := connect(t, s)
 	var out mcpserver.EmployeeOut
 	call(t, cs, "get_employee", map[string]any{"id": "harnsy/sample-skills", "version": "1.2.0", "target": "claude-code"}, &out)
-	if out.PersonaFile != ".claude/agents/sample-skills.md" || out.Target != "claude-code" {
-		t.Fatalf("persona %q for %q", out.PersonaFile, out.Target)
+	if out.PersonaFile != ".claude/agents/sample-skills.md" || out.JobFile != out.PersonaFile || out.Target != "claude-code" {
+		t.Fatalf("persona %q, job %q for %q", out.PersonaFile, out.JobFile, out.Target)
+	}
+	out = mcpserver.EmployeeOut{}
+	call(t, cs, "get_employee", map[string]any{"id": "harnsy/sample-skills", "target": "openclaw"}, &out)
+	if out.PersonaFile != "workspace-sample-skills/SOUL.md" || out.JobFile != "workspace-sample-skills/AGENTS.md" || out.Target != "openclaw" {
+		t.Fatalf("persona %q, job %q for %q", out.PersonaFile, out.JobFile, out.Target)
 	}
 	for name, args := range map[string]map[string]any{
 		"an unknown id":        {"id": "harnsy/nobody"},
@@ -111,7 +116,7 @@ func TestBigEmployeeComesInParts(t *testing.T) {
 		} else {
 			later++
 		}
-		if (f.Path == out.PersonaFile || strings.HasSuffix(f.Path, "NOTICE.md")) && f.Content == nil {
+		if (f.Path == out.PersonaFile || f.Path == out.JobFile || strings.HasSuffix(f.Path, "NOTICE.md")) && f.Content == nil {
 			t.Errorf("%s must always come with the answer", f.Path)
 		}
 	}

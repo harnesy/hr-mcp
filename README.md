@@ -35,6 +35,20 @@ harnsy-hr/<name>/docs/…            its casebook of worked cases
 
 Claude Code asks you before each write under `.claude/`; that is its own guard and it is expected.
 
+For OpenClaw (`target: openclaw`), under OpenClaw's state directory (`~/.openclaw`), a workspace of its own:
+
+```
+workspace-<name>/SOUL.md           who the employee is
+workspace-<name>/AGENTS.md         its job
+workspace-<name>/IDENTITY.md       its name, vibe and emoji
+workspace-<name>/skills/<skill>/…  its skills, byte for byte as published; they belong to this agent only
+workspace-<name>/NOTICE.md         licence, source, credits: keep it with the employee
+workspace-<name>/docs/…            its casebook of worked cases
+```
+
+Then `openclaw agents add <name> --workspace ~/.openclaw/workspace-<name> --non-interactive` makes it an agent beside
+your own; your own agent's files are not touched.
+
 For any other agent that reads files (`target: generic`): one folder `<name>/` with `AGENT.md`, `docs/`, `skills/` and
 `NOTICE.md`. Tell the agent «Read `<name>/AGENT.md` and work as that employee».
 

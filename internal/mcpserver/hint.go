@@ -38,12 +38,22 @@ var clientHints = map[string]clientHint{
 		"Start it: run `claude --agent %[1]s` in the project, or in a running session ask to use the %[1]s subagent. Its skills are project skills and load by themselves."},
 	"codex": {render.Generic, "in ~/.codex/config.toml: [mcp_servers.hr] url = \"%s\"",
 		"Start it: open a session in the project and say «Read %[1]s/AGENT.md and work as that employee; its skills are in %[1]s/skills/»."},
-	"openclaw": {render.Generic, `openclaw mcp set hr '{"url":"%s","transport":"streamable-http"}'`,
-		"Start it: tell the agent «Read %[1]s/AGENT.md and work as that employee; its skills are in %[1]s/skills/». For an agent of its own with its own workspace, use the hr-openclaw plugin instead."},
+	"openclaw": {render.OpenClaw, `openclaw mcp set hr '{"url":"%s","transport":"streamable-http"}'`,
+		"Make it an agent, after every file is written: `openclaw agents add %[1]s --workspace <state directory>/workspace-%[1]s --non-interactive`. Start it: `openclaw agent --agent %[1]s --message \"Who are you?\"`. The agent uses the person's own model settings."},
 	"hermes": {render.Generic, "hermes mcp add hr --url %s",
 		"Start it: tell the agent «Read %[1]s/AGENT.md and work as that employee; its skills are in %[1]s/skills/». For a profile of its own, use the hr-hermes plugin instead."},
 	"generic": {render.Generic, "add a remote MCP server (streamable HTTP, no sign-in) with the URL %s in the client's MCP settings",
 		"Start it: tell the agent «Read %[1]s/AGENT.md and work as that employee; its skills are in %[1]s/skills/»."},
+}
+
+// places says, per target, which file tells who the employee is and where its files go; %[1]s is its name.
+var places = map[render.Target]struct{ persona, where string }{
+	render.Generic: {"%[1]s/AGENT.md",
+		"Write every file at its path under the project's root: the employee lands in the folder %[1]s/."},
+	render.ClaudeCode: {".claude/agents/%[1]s.md",
+		"Write every file at its path under the project's root: the subagent is .claude/agents/%[1]s.md, its skills go to .claude/skills/, its notice and casebook to harnsy-hr/%[1]s/. Claude Code asks the person before a write under .claude/: wait for the yes, and do not write those files another way."},
+	render.OpenClaw: {"workspace-%[1]s/SOUL.md and workspace-%[1]s/AGENTS.md",
+		"Write every file at its path under OpenClaw's state directory (~/.openclaw, or $OPENCLAW_STATE_DIR when it is set): the employee lands in a workspace of its own, workspace-%[1]s/, with SOUL.md (who it is), AGENTS.md (its job), IDENTITY.md and skills/. Never write these files into the workspace of an agent that already exists: its own SOUL.md and AGENTS.md would be replaced. If the folder workspace-%[1]s/ is already there, stop and ask the person."},
 }
 
 const signedInstall = "These files arrive over TLS without the catalog's signature. For an install that checks the signature on the person's own machine use harnsy itself, the hr-openclaw plugin for OpenClaw or the hr-hermes plugin for Hermes Agent; or download the bundle (get_employee: bundle.url) and compare its SHA-256 with bundle.sha256."
@@ -66,12 +76,8 @@ func (s *server) hint(_ context.Context, _ *mcp.CallToolRequest, in HintIn) (*mc
 	}
 	out.Target = string(h.target)
 	out.AddServer = fmt.Sprintf(h.addServer, s.endpoint)
-	persona := name + "/AGENT.md"
-	where := "Write every file at its path under the project's root: the employee lands in the folder " + name + "/."
-	if h.target == render.ClaudeCode {
-		persona = ".claude/agents/" + name + ".md"
-		where = "Write every file at its path under the project's root: the subagent is " + persona + ", its skills go to .claude/skills/, its notice and casebook to harnsy-hr/" + name + "/. Claude Code asks the person before a write under .claude/: wait for the yes, and do not write those files another way."
-	}
+	place := places[h.target]
+	persona, where := fmt.Sprintf(place.persona, name), fmt.Sprintf(place.where, name)
 	out.Steps = []string{
 		fmt.Sprintf(`Call get_employee with {"id": "%s", "target": "%s"}. Show the person the employee's title, licence and notice, and ask before writing anything.`, id, h.target),
 		`For each file whose content is null, call get_employee_file with the same id, version and target and the file's path; when next_offset is not 0, call again with that offset and join the parts.`,

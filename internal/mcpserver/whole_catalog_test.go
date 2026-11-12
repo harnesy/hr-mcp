@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf16"
 
 	"github.com/harnesy/hr-mcp/internal/catalog"
 	"github.com/harnesy/hr-mcp/internal/catalog/catalogtest"
@@ -93,4 +94,46 @@ func TestWriteStand(t *testing.T) {
 		t.Fatal(err)
 	}
 	catalogtest.Write(t, filepath.Join(root, "pub.txt"), []byte(base64.StdEncoding.EncodeToString(k.Key.Pub)+"\n"))
+}
+
+// TestWholeCatalogFitsOpenClaw: for every employee the files OpenClaw loads at the start of a session (AGENTS.md,
+// SOUL.md, IDENTITY.md) stay within its limits, per file and together, so none is cut. A character is a UTF-16 unit,
+// as OpenClaw counts. Skill descriptions longer than OpenClaw's advice (one line, under 160 characters) are counted,
+// not refused: a skill file travels byte for byte.
+func TestWholeCatalogFitsOpenClaw(t *testing.T) {
+	dir := realCatalog(t)
+	k, root := catalogtest.New(t), t.TempDir()
+	k.Release(t, root, k.Catalog(t, dir), nil)
+	rel, err := catalog.Load(root, k.Key, catalogtest.Host, k.Now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	largestFile, largestTotal, longDescriptions, skills := 0, 0, 0, 0
+	for _, e := range rel.Employees {
+		tree, err := render.Render(e, render.OpenClaw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		total := 0
+		for _, f := range tree.Files {
+			if name := f.Path[strings.LastIndex(f.Path, "/")+1:]; strings.Count(f.Path, "/") != 1 || (name != "AGENTS.md" && name != "SOUL.md" && name != "IDENTITY.md") {
+				continue
+			}
+			n := len(utf16.Encode([]rune(string(f.Content))))
+			total += n
+			if largestFile = max(largestFile, n); n > render.OpenClawFileMax {
+				t.Errorf("%s: %s is %d characters, OpenClaw loads at most %d of a file", e.Entry.ID, f.Path, n, render.OpenClawFileMax)
+			}
+		}
+		if largestTotal = max(largestTotal, total); total > render.OpenClawTotalMax {
+			t.Errorf("%s: the loaded files are %d characters together, at most %d", e.Entry.ID, total, render.OpenClawTotalMax)
+		}
+		for _, s := range e.Doc.Skills {
+			if skills++; len([]rune(s.Description)) >= 160 || strings.Contains(strings.TrimSpace(s.Description), "\n") {
+				longDescriptions++
+			}
+		}
+	}
+	t.Logf("%d employees for openclaw: largest loaded file %d characters (limit %d), largest total %d (limit %d); %d of %d skill descriptions are longer than OpenClaw's advice of 160 characters on one line",
+		len(rel.Employees), largestFile, render.OpenClawFileMax, largestTotal, render.OpenClawTotalMax, longDescriptions, skills)
 }
