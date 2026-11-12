@@ -44,21 +44,13 @@ func Load(dir string, key Key, host string, now time.Time) (*Release, error) {
 		if e.Kind != "employee" {
 			continue // bundle v1 reads employees only
 		}
-		if err := checkNames(e); err != nil {
+		if err := checkEntry(e, host); err != nil {
 			return nil, err
 		}
 		if revoked[e.ID+"@"+e.Version] {
 			continue // a revoked version is never served
 		}
-		rel, ok := localPath(e.URL, host)
-		if !ok {
-			return nil, fmt.Errorf("%s: url not on %s", e.ID, host)
-		}
-		file, err := readLimited(filepath.Join(dir, filepath.FromSlash(rel)), MaxBundle)
-		if err != nil {
-			return nil, fmt.Errorf("%s@%s: %w", e.ID, e.Version, err)
-		}
-		emp, err := openBundle(key, host, e, file)
+		emp, err := readBundle(dir, key, host, e)
 		if err != nil {
 			return nil, fmt.Errorf("%s@%s: %w", e.ID, e.Version, err)
 		}
@@ -66,6 +58,19 @@ func Load(dir string, key Key, host string, now time.Time) (*Release, error) {
 		r.byID[e.ID] = emp
 	}
 	return r, nil
+}
+
+// readBundle reads the bundle file of a feed entry from the release in dir and verifies it.
+func readBundle(dir string, key Key, host string, e Entry) (*Employee, error) {
+	rel, ok := localPath(e.URL, host)
+	if !ok {
+		return nil, fmt.Errorf("url not on %s", host)
+	}
+	file, err := readLimited(filepath.Join(dir, filepath.FromSlash(rel)), MaxBundle)
+	if err != nil {
+		return nil, err
+	}
+	return openBundle(key, host, e, file)
 }
 
 // localPath turns a feed url into the file's path inside the release; false when the url is not a clean path on the

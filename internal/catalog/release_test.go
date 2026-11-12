@@ -108,6 +108,14 @@ func TestLoadRefuses(t *testing.T) {
 		{name: "a bundle url that climbs out of the release", want: "not on hr.harnsy.dev", do: func(t *testing.T, r release) {
 			resign(t, r, func(f *catalog.Feed) { f.Bundles[0].URL = "https://hr.harnsy.dev/../../etc/passwd" })
 		}},
+		{name: "a cv_url on another host", want: "cv_url not on hr.harnsy.dev", do: func(t *testing.T, r release) {
+			resign(t, r, func(f *catalog.Feed) { f.Bundles[0].CVURL = "https://hr.harnsy.dev.evil.example/e/harnsy/reviewer" })
+		}},
+		{name: "an avatar_url on another host", want: "avatar_url not on hr.harnsy.dev", do: func(t *testing.T, r release) {
+			resign(t, r, func(f *catalog.Feed) {
+				f.Bundles[0].AvatarURL = "http://hr.harnsy.dev/packs/harnsy/reviewer/avatar.png"
+			})
+		}},
 		{name: "the bundle file is another size", want: "size or sha256", do: func(t *testing.T, r release) {
 			resign(t, r, func(f *catalog.Feed) { f.Bundles[0].Size++ })
 		}},

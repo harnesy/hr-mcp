@@ -44,13 +44,19 @@ func ValidID(id string) bool {
 // ValidVersion reports whether v is a version in the catalog's grammar: MAJOR.MINOR.PATCH.
 func ValidVersion(v string) bool { return semverRE.MatchString(v) }
 
-// checkNames refuses a feed entry whose id or version is outside the grammar.
-func checkNames(e Entry) error {
+// checkEntry refuses a feed entry whose id or version is outside the grammar, or whose links (the employee's page,
+// its picture) are not on the catalog's host: they are shown to a person and named in the notice as the source.
+func checkEntry(e Entry, host string) error {
 	if !ValidID(e.ID) {
 		return fmt.Errorf("id %.130q: want <publisher>/<name> in lowercase latin letters, digits and -", e.ID)
 	}
 	if !ValidVersion(e.Version) {
 		return fmt.Errorf("%s: version %.40q: want MAJOR.MINOR.PATCH", e.ID, e.Version)
+	}
+	for _, link := range []struct{ name, url string }{{"cv_url", e.CVURL}, {"avatar_url", e.AvatarURL}} {
+		if link.url != "" && !strings.HasPrefix(link.url, "https://"+host+"/") {
+			return fmt.Errorf("%s: %s not on %s", e.ID, link.name, host)
+		}
 	}
 	return nil
 }
