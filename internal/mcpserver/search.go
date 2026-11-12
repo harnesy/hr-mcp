@@ -10,7 +10,7 @@ import (
 
 // SearchIn is the input of search_employees.
 type SearchIn struct {
-	Query      string `json:"query,omitempty" jsonschema:"words for a role, a skill or a need, e.g. accountant, or: review Go code"`
+	Query      string `json:"query,omitempty" jsonschema:"a few words for a role, a skill or a need, e.g. accountant, or: review Go code; at most 256 bytes and 16 different words, a longer one is refused"`
 	Department string `json:"department,omitempty" jsonschema:"one of: engineering, product, design, marketing, sales, support, operations, finance, legal, management, content, data, hr"`
 	Limit      int    `json:"limit,omitempty" jsonschema:"cards per page, at most 20; 10 when left out"`
 	Cursor     string `json:"cursor,omitempty" jsonschema:"next_cursor of the page before"`

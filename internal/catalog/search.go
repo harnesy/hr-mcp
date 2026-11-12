@@ -15,6 +15,15 @@ const (
 	MaxSearchLimit     = 20
 )
 
+// Limits of a request. What a person types is short; a longer request is refused, not cut: a search costs one pass
+// over every employee's words per word asked, so the words asked are few.
+const (
+	MaxQueryBytes      = 256 // Query.Text
+	MaxQueryTerms      = 16  // different words of it that are searched for
+	MaxDepartmentBytes = 64  // Query.Department
+	MaxCursorBytes     = 64  // Query.Cursor
+)
+
 // Query is a search of the catalog. Every field is optional: no words lists everyone in the feed's order.
 type Query struct {
 	Text       string // words a person types: a role, a skill, a need
@@ -102,15 +111,34 @@ func stem(w string) string {
 // term is one word of a request: as written, in the singular, and its stem.
 type term struct{ word, stem string }
 
-// terms reads a request's words, without the ones that tell nothing.
+// terms reads a request's words, each once, without the ones that tell nothing.
 func terms(text string) []term {
 	var out []term
+	seen := map[term]bool{}
 	for _, w := range tokens(text) {
-		if s := stem(w); !stopWords[s] {
-			out = append(out, term{singular(w), s})
+		if t := (term{singular(w), stem(w)}); !stopWords[t.stem] && !seen[t] {
+			seen[t] = true
+			out = append(out, t)
 		}
 	}
 	return out
+}
+
+// asked checks a request against the limits and reads its words. A refusal never repeats what was sent.
+func (q Query) asked() ([]term, error) {
+	switch {
+	case len(q.Text) > MaxQueryBytes:
+		return nil, fmt.Errorf("query: %d bytes, at most %d; say it in a few words", len(q.Text), MaxQueryBytes)
+	case len(q.Department) > MaxDepartmentBytes:
+		return nil, fmt.Errorf("department: at most %d bytes; it is one word, for example finance", MaxDepartmentBytes)
+	case len(q.Cursor) > MaxCursorBytes:
+		return nil, errors.New("cursor: not a cursor of this search; search again without it")
+	}
+	words := terms(q.Text)
+	if len(words) > MaxQueryTerms {
+		return nil, fmt.Errorf("query: %d different words, at most %d; say it in a few words", len(words), MaxQueryTerms)
+	}
+	return words, nil
 }
 
 // hit is how well one employee answers a request: how many of its words match, how well, and how many of them the
@@ -148,11 +176,15 @@ func (ix searchIndex) score(word string) int {
 	return best
 }
 
-// Search finds employees: those in the department, when one is given, that match at least one word of the text. The
+// Search finds employees: those in the department, when one is given, that match at least one word of the text. A
+// request above the limits (MaxQueryBytes, MaxQueryTerms, MaxDepartmentBytes, MaxCursorBytes) is refused. The
 // ones that match more words come first, then the better matches, then the ones named by the very word («accountant»
 // before «account executive»), then the feed's order.
 func (r *Release) Search(q Query) (Page, error) {
-	asked := terms(q.Text)
+	asked, err := q.asked()
+	if err != nil {
+		return Page{}, err
+	}
 	var hits []hit
 	for _, e := range r.Employees {
 		if q.Department != "" && !strings.EqualFold(q.Department, e.Entry.Department) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -127,5 +128,28 @@ func TestSearchEmployees(t *testing.T) {
 	}
 	if res := call(t, cs, "search_employees", map[string]any{"cursor": "nonsense"}, nil); !res.IsError {
 		t.Fatal("a bad cursor must be a tool error")
+	}
+}
+
+// TestSearchRefusesALongQuery: a query no person types (64 KB of words) is a plain tool error at once; it is not cut and
+// searched, and the error does not repeat it.
+func TestSearchRefusesALongQuery(t *testing.T) {
+	cs := connect(t, stand(t))
+	var long strings.Builder
+	for i := 0; long.Len() < 64<<10; i++ {
+		long.WriteString("w" + strconv.Itoa(i) + "x ")
+	}
+	start := time.Now()
+	res := call(t, cs, "search_employees", map[string]any{"query": long.String()}, nil)
+	if took := time.Since(start); !res.IsError || took > 250*time.Millisecond {
+		t.Fatalf("a 64 KB query: tool error %v in %s, want a refusal within 250 ms", res.IsError, took)
+	}
+	if msg := text(res); !strings.Contains(msg, "query") || strings.Contains(msg, "w1x") || len(msg) > 300 {
+		t.Fatalf("the refusal: %.400q", msg)
+	}
+	for _, args := range []map[string]any{{"department": strings.Repeat("d", 65)}, {"cursor": "7:" + strings.Repeat("0", 64)}} {
+		if res := call(t, cs, "search_employees", args, nil); !res.IsError {
+			t.Fatalf("%.40v must be a tool error", args)
+		}
 	}
 }

@@ -17,6 +17,8 @@ Restart=on-failure
 RestartSec=5
 # The whole catalog is held in memory (about 35 MB for 142 employees).
 MemoryMax=256M
+# One core at most: the neighbours on the machine keep theirs whatever is asked of this server.
+CPUQuota=100%
 
 NoNewPrivileges=yes
 ProtectSystem=strict

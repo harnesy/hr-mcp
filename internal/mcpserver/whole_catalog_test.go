@@ -235,3 +235,35 @@ func TestWriteTrees(t *testing.T) {
 		}
 	}
 }
+
+// TestWholeCatalogSearchIsBounded: on the whole catalog a 64 KB query is refused at once, and a query of the most
+// words that are taken (16, all real ones) is answered in a few milliseconds: the most one request can cost.
+func TestWholeCatalogSearchIsBounded(t *testing.T) {
+	k, root := catalogtest.New(t), t.TempDir()
+	k.Release(t, root, k.Catalog(t, realCatalog(t)), nil)
+	rel, err := catalog.Load(root, k.Key, catalogtest.Host, k.Now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fastest := func(q string) (best time.Duration, err error) {
+		for i := range 5 {
+			start := time.Now()
+			_, err = rel.Search(catalog.Query{Text: q})
+			if took := time.Since(start); i == 0 || took < best {
+				best = took
+			}
+		}
+		return best, err
+	}
+	long := strings.Repeat("review contracts and invoices ", (64<<10)/30)
+	refused, err := fastest(long)
+	if err == nil || refused > 5*time.Millisecond {
+		t.Errorf("a %d-byte query: err %v in %s, want a refusal within 5 ms", len(long), err, refused)
+	}
+	most := "accountant reviewer contracts support designer sales legal finance marketing product engineering operations content data manager writer"
+	taken, err := fastest(most)
+	if err != nil || taken > 50*time.Millisecond {
+		t.Errorf("a query of 16 words (%d bytes): err %v in %s, want an answer within 50 ms", len(most), err, taken)
+	}
+	t.Logf("%d employees: a %d-byte query refused in %s; a query of 16 words answered in %s", len(rel.Employees), len(long), refused, taken)
+}
