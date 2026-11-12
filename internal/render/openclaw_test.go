@@ -6,6 +6,7 @@ import (
 	"testing"
 	"unicode/utf16"
 
+	"github.com/harnesy/hr-mcp/internal/catalog"
 	"github.com/harnesy/hr-mcp/internal/render"
 )
 
@@ -18,13 +19,7 @@ func TestOpenClawWorkspace(t *testing.T) {
 		tree := mustRender(t, e, render.OpenClaw)
 		_, name, _ := strings.Cut(e.Entry.ID, "/")
 		home := "workspace-" + name + "/"
-		files := map[string]string{}
-		for _, f := range tree.Files {
-			if !strings.HasPrefix(f.Path, home) {
-				t.Errorf("%s: %q is outside %s: a file at the workspace root of a running agent would replace the person's own", e.Entry.ID, f.Path, home)
-			}
-			files[strings.TrimPrefix(f.Path, home)] = string(f.Content)
-		}
+		files := filesUnder(t, e, tree, home)
 		for _, never := range []string{"USER.md", "MEMORY.md", "BOOTSTRAP.md", "TOOLS.md", "HEARTBEAT.md"} {
 			if _, ok := files[never]; ok {
 				t.Errorf("%s: %s must not be written", e.Entry.ID, never)
@@ -52,33 +47,58 @@ func TestOpenClawWorkspace(t *testing.T) {
 				t.Errorf("%s: %s must end with the credit line, ends with %q", e.Entry.ID, f, last)
 			}
 		}
-		who := e.Doc.Persona.Name
-		if who == "" {
-			who = e.Entry.Title
-		}
-		for _, line := range []string{"- Name: " + who, "- Creature: AI agent, " + e.Doc.Role.Name, "- Vibe: " + e.Doc.Role.Tagline} {
-			if !hasLine(identity, line) {
-				t.Errorf("%s: IDENTITY.md lacks the line %q:\n%s", e.Entry.ID, line, identity)
-			}
-		}
-		if !regexp.MustCompile(`(?m)^- Emoji: \S+$`).MatchString(identity) {
-			t.Errorf("%s: IDENTITY.md lacks an emoji line:\n%s", e.Entry.ID, identity)
-		}
+		identityHasItsLines(t, e, identity)
 		for skill := range skillsOf(e.Files) {
 			if _, ok := files["skills/"+skill+"/SKILL.md"]; !ok {
 				t.Errorf("%s: skill %s is not at skills/%s/SKILL.md of the workspace", e.Entry.ID, skill, skill)
 			}
 		}
-		total := 0
-		for _, f := range []string{"AGENTS.md", "SOUL.md", "IDENTITY.md"} {
-			n := len(utf16.Encode([]rune(files[f])))
-			if total += n; n == 0 || n > render.OpenClawFileMax {
-				t.Errorf("%s: %s is %d characters; OpenClaw loads at most %d of a file", e.Entry.ID, f, n, render.OpenClawFileMax)
-			}
+		fitsOpenClaw(t, e, files)
+	}
+}
+
+// filesUnder is a tree's files by their paths inside home; every file must be there.
+func filesUnder(t *testing.T, e *catalog.Employee, tree render.Tree, home string) map[string]string {
+	t.Helper()
+	files := map[string]string{}
+	for _, f := range tree.Files {
+		if !strings.HasPrefix(f.Path, home) {
+			t.Errorf("%s: %q is outside %s: a file beside the employee's folder could replace the person's own", e.Entry.ID, f.Path, home)
 		}
-		if total > render.OpenClawTotalMax {
-			t.Errorf("%s: the files OpenClaw loads every session are %d characters, at most %d", e.Entry.ID, total, render.OpenClawTotalMax)
+		files[strings.TrimPrefix(f.Path, home)] = string(f.Content)
+	}
+	return files
+}
+
+// identityHasItsLines: IDENTITY.md has one `- Label: value` line per field, the form OpenClaw parses.
+func identityHasItsLines(t *testing.T, e *catalog.Employee, identity string) {
+	t.Helper()
+	who := e.Doc.Persona.Name
+	if who == "" {
+		who = e.Entry.Title
+	}
+	for _, line := range []string{"- Name: " + who, "- Creature: AI agent, " + e.Doc.Role.Name, "- Vibe: " + e.Doc.Role.Tagline} {
+		if !hasLine(identity, line) {
+			t.Errorf("%s: IDENTITY.md lacks the line %q:\n%s", e.Entry.ID, line, identity)
 		}
+	}
+	if !regexp.MustCompile(`(?m)^- Emoji: \S+$`).MatchString(identity) {
+		t.Errorf("%s: IDENTITY.md lacks an emoji line:\n%s", e.Entry.ID, identity)
+	}
+}
+
+// fitsOpenClaw: the files OpenClaw loads every session stay within its limits, per file and together.
+func fitsOpenClaw(t *testing.T, e *catalog.Employee, files map[string]string) {
+	t.Helper()
+	total := 0
+	for _, f := range []string{"AGENTS.md", "SOUL.md", "IDENTITY.md"} {
+		n := len(utf16.Encode([]rune(files[f])))
+		if total += n; n == 0 || n > render.OpenClawFileMax {
+			t.Errorf("%s: %s is %d characters; OpenClaw loads at most %d of a file", e.Entry.ID, f, n, render.OpenClawFileMax)
+		}
+	}
+	if total > render.OpenClawTotalMax {
+		t.Errorf("%s: the files OpenClaw loads every session are %d characters, at most %d", e.Entry.ID, total, render.OpenClawTotalMax)
 	}
 }
 

@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+
 	"github.com/harnesy/hr-mcp/internal/catalog/catalogtest"
 	"github.com/harnesy/hr-mcp/internal/mcpserver"
 )
@@ -129,25 +131,8 @@ func TestBigEmployeeComesInParts(t *testing.T) {
 		if f.Content != nil {
 			continue
 		}
-		var got []byte
-		offset, parts := 0, 0
-		for {
-			var part mcpserver.FileOut
-			res := call(t, cs, "get_employee_file", map[string]any{"id": "harnsy/big", "version": "1.0.0", "target": "generic", "path": f.Path, "offset": offset}, &part)
-			if n := len(text(res)); n > mcpserver.MaxAnswer {
-				t.Fatalf("%s: a part is %d bytes, at most %d", f.Path, n, mcpserver.MaxAnswer)
-			}
-			if part.Content == nil || part.SHA256 != f.SHA256 || part.Bytes != f.Bytes {
-				t.Fatalf("%s: part %+v", f.Path, part)
-			}
-			got = append(got, *part.Content...)
-			parts++
-			if part.NextOffset == 0 {
-				break
-			}
-			offset = part.NextOffset
-		}
-		if catalogtest.Sum(got) != f.SHA256 {
+		got, parts := inParts(t, cs, "harnsy/big", "1.0.0", "generic", f)
+		if catalogtest.Sum([]byte(got)) != f.SHA256 {
 			t.Fatalf("%s: %d parts do not add up to the file", f.Path, parts)
 		}
 		if strings.HasSuffix(f.Path, "assets/a.md") && parts < 3 {
@@ -161,6 +146,27 @@ func TestBigEmployeeComesInParts(t *testing.T) {
 	} {
 		if res := call(t, cs, "get_employee_file", args, nil); !res.IsError {
 			t.Errorf("%s must be a tool error", name)
+		}
+	}
+}
+
+// inParts reads one file of an employee's tree through get_employee_file, part after part, and returns it whole with
+// the number of parts. Every part must fit one answer and name the whole file's size and hash.
+func inParts(t *testing.T, cs *mcp.ClientSession, id, version, target string, f mcpserver.FileOut) (string, int) {
+	t.Helper()
+	var whole strings.Builder
+	for offset, parts := 0, 1; ; parts++ {
+		var part mcpserver.FileOut
+		res := call(t, cs, "get_employee_file", map[string]any{"id": id, "version": version, "target": target, "path": f.Path, "offset": offset}, &part)
+		if n := len(text(res)); n > mcpserver.MaxAnswer {
+			t.Fatalf("%s: a part is %d bytes, at most %d", f.Path, n, mcpserver.MaxAnswer)
+		}
+		if part.Content == nil || part.SHA256 != f.SHA256 || part.Bytes != f.Bytes {
+			t.Fatalf("%s: part %+v", f.Path, part)
+		}
+		whole.WriteString(*part.Content)
+		if offset = part.NextOffset; offset == 0 {
+			return whole.String(), parts
 		}
 	}
 }

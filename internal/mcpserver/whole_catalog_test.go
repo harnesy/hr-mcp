@@ -58,16 +58,7 @@ func TestWholeCatalog(t *testing.T) {
 				content := f.Content
 				if content == nil {
 					fetched++
-					var whole strings.Builder
-					for offset := 0; ; {
-						var part mcpserver.FileOut
-						call(t, cs, "get_employee_file", map[string]any{"id": e.Entry.ID, "version": e.Entry.Version, "target": string(target), "path": f.Path, "offset": offset}, &part)
-						whole.WriteString(*part.Content)
-						if offset = part.NextOffset; offset == 0 {
-							break
-						}
-					}
-					text := whole.String()
+					text, _ := inParts(t, cs, e.Entry.ID, e.Entry.Version, string(target), f)
 					content = &text
 				}
 				if catalogtest.Sum([]byte(*content)) != f.SHA256 {
