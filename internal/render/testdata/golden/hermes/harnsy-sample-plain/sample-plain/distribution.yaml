@@ -1,0 +1,5 @@
+name: "sample-plain"
+version: "1.0.0"
+description: "Sample librarian: Keeps the shelves in order and finds the book you meant."
+author: "harnsy (Pavel Buchnev)"
+license: "CC-BY-4.0"

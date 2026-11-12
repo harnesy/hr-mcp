@@ -19,10 +19,11 @@ const (
 	Generic    Target = "generic"     // one folder, one AGENT.md: any agent that reads files
 	ClaudeCode Target = "claude-code" // a subagent file and project skills under .claude/
 	OpenClaw   Target = "openclaw"    // an agent workspace of its own: SOUL.md, AGENTS.md, IDENTITY.md, skills/
+	Hermes     Target = "hermes"      // a profile distribution for Hermes Agent: distribution.yaml, SOUL.md, skills/
 )
 
 // Targets lists every target, in the order they are offered.
-func Targets() []Target { return []Target{Generic, ClaudeCode, OpenClaw} }
+func Targets() []Target { return []Target{Generic, ClaudeCode, OpenClaw, Hermes} }
 
 // File is one file of a tree: its path from the place the tree is written to, with forward slashes.
 type File struct {
@@ -50,6 +51,7 @@ type layout struct {
 	notice   string                    // path of the notice
 	casebook string                    // path of the casebook
 	inside   string                    // the folder the employee reads its own files from; paths it is told are from there
+	cases    string                    // how the persona file names the casebook, when not by its path
 	skillDir func(skill string) string // folder of a skill
 	skillRef func(skill string) string // how the persona file points at a skill
 }
@@ -64,6 +66,8 @@ func Render(e *catalog.Employee, t Target) (Tree, error) {
 		return claudeCode(e, name), nil
 	case OpenClaw:
 		return openClaw(e, name), nil
+	case Hermes:
+		return hermes(e, name), nil
 	}
 	return Tree{}, fmt.Errorf("target %q: want one of %s", t, targetList())
 }

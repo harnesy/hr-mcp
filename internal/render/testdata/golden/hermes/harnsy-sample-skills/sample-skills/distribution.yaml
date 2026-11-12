@@ -1,0 +1,5 @@
+name: "sample-skills"
+version: "1.2.0"
+description: "Sample archivist: Audits the shelves and keeps the loan ledger balanced."
+author: "harnsy (Pavel Buchnev)"
+license: "CC-BY-4.0"

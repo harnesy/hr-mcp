@@ -40,8 +40,8 @@ var clientHints = map[string]clientHint{
 		"Start it: open a session in the project and say «Read %[1]s/AGENT.md and work as that employee; its skills are in %[1]s/skills/»."},
 	"openclaw": {render.OpenClaw, `openclaw mcp set hr '{"url":"%s","transport":"streamable-http"}'`,
 		"Make it an agent, after every file is written: `openclaw agents add %[1]s --workspace <state directory>/workspace-%[1]s --non-interactive`. Start it: `openclaw agent --agent %[1]s --message \"Who are you?\"`. The agent uses the person's own model settings."},
-	"hermes": {render.Generic, "hermes mcp add hr --url %s",
-		"Start it: tell the agent «Read %[1]s/AGENT.md and work as that employee; its skills are in %[1]s/skills/». For a profile of its own, use the hr-hermes plugin instead."},
+	"hermes": {render.Hermes, "hermes mcp add hr --url %[1]s (it asks a few questions); or in the profile's config.yaml: mcp_servers: {hr: {url: \"%[1]s\"}}",
+		"Make it a profile, after every file is written: `hermes profile install <folder>/%[1]s --name %[1]s --alias`. Hermes shows what it installs and asks for a yes: the person answers it, do not answer for them. Then check that the profile folder exists (a declined install also ends without an error). A new profile has no model settings of its own: the person runs `hermes -p %[1]s setup` once. Start it: `hermes -p %[1]s chat`."},
 	"generic": {render.Generic, "add a remote MCP server (streamable HTTP, no sign-in) with the URL %s in the client's MCP settings",
 		"Start it: tell the agent «Read %[1]s/AGENT.md and work as that employee; its skills are in %[1]s/skills/»."},
 }
@@ -54,6 +54,8 @@ var places = map[render.Target]struct{ persona, where string }{
 		"Write every file at its path under the project's root: the subagent is .claude/agents/%[1]s.md, its skills go to .claude/skills/, its notice and casebook to harnsy-hr/%[1]s/. Claude Code asks the person before a write under .claude/: wait for the yes, and do not write those files another way."},
 	render.OpenClaw: {"workspace-%[1]s/SOUL.md and workspace-%[1]s/AGENTS.md",
 		"Write every file at its path under OpenClaw's state directory (~/.openclaw, or $OPENCLAW_STATE_DIR when it is set): the employee lands in a workspace of its own, workspace-%[1]s/, with SOUL.md (who it is), AGENTS.md (its job), IDENTITY.md and skills/. Never write these files into the workspace of an agent that already exists: its own SOUL.md and AGENTS.md would be replaced. If the folder workspace-%[1]s/ is already there, stop and ask the person."},
+	render.Hermes: {"%[1]s/SOUL.md",
+		"Write every file at its path under a folder that stays on the disk, for example ~/.hermes/harnsy-hr/: the employee lands there as a profile distribution, the folder %[1]s/ with distribution.yaml, SOUL.md (who it is and its job), skills/ and NOTICE.md. Not a temporary folder: `hermes profile update` reads it again. Never write these files into ~/.hermes itself or into a profile that exists: its own SOUL.md would be replaced."},
 }
 
 const signedInstall = "These files arrive over TLS without the catalog's signature. For an install that checks the signature on the person's own machine use harnsy itself, the hr-openclaw plugin for OpenClaw or the hr-hermes plugin for Hermes Agent; or download the bundle (get_employee: bundle.url) and compare its SHA-256 with bundle.sha256."

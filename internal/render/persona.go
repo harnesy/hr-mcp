@@ -107,7 +107,11 @@ func casebook(e *catalog.Employee, l layout) string {
 	if l.job != "" {
 		principles = "your principles"
 	}
-	return "Worked cases are in `" + strings.TrimPrefix(l.casebook, l.inside) + "`. Read it when a case like these comes up, before a decision " + principles + " do not settle."
+	where := "`" + strings.TrimPrefix(l.casebook, l.inside) + "`"
+	if l.cases != "" {
+		where = l.cases
+	}
+	return "Worked cases are in " + where + ". Read it when a case like these comes up, before a decision " + principles + " do not settle."
 }
 
 // creditLine closes a persona file.

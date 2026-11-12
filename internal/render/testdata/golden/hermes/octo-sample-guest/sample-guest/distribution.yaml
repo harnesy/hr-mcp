@@ -1,0 +1,5 @@
+name: "sample-guest"
+version: "1.0.0"
+description: "Sample guest: Writes this week's notice in plain words: \"what, when, where\"."
+author: "Octo Press"
+license: "CC0-1.0"

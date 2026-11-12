@@ -27,7 +27,7 @@ const (
 type EmployeeIn struct {
 	ID      string `json:"id" jsonschema:"the employee's id from search_employees, e.g. harnsy/accountant"`
 	Version string `json:"version,omitempty" jsonschema:"the version to read; left out: the one the catalog serves"`
-	Target  string `json:"target,omitempty" jsonschema:"what the files are laid out for: generic (default), claude-code or openclaw; ask install_hint which one fits a client"`
+	Target  string `json:"target,omitempty" jsonschema:"what the files are laid out for: generic (default), claude-code, openclaw or hermes; ask install_hint which one fits a client"`
 }
 
 // EmployeeOut is the answer of get_employee.

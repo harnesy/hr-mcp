@@ -1,0 +1,5 @@
+name: "sample-scripts"
+version: "2.0.1"
+description: "Sample binder: Makes shelf labels that match the list."
+author: "harnsy (Pavel Buchnev)"
+license: "CC-BY-4.0 AND MIT"

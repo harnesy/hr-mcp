@@ -49,6 +49,20 @@ workspace-<name>/docs/…            its casebook of worked cases
 Then `openclaw agents add <name> --workspace ~/.openclaw/workspace-<name> --non-interactive` makes it an agent beside
 your own; your own agent's files are not touched.
 
+For Hermes Agent (`target: hermes`), in a folder that stays on your disk (for example `~/.hermes/harnsy-hr/`), a
+profile distribution:
+
+```
+<name>/distribution.yaml           name, version, author, licence
+<name>/SOUL.md                     who the employee is and its job
+<name>/skills/<publisher>/…        its skills, byte for byte as published, and its casebook as the skill persona-casebook
+<name>/NOTICE.md                   licence, source, credits: keep it with the employee
+```
+
+Then `hermes profile install <folder>/<name> --name <name> --alias` makes it a profile beside your own (Hermes shows
+what it installs and asks you), `hermes -p <name> setup` picks its model once, and `hermes -p <name> chat` starts it.
+Your own profile and its `SOUL.md` are not touched.
+
 For any other agent that reads files (`target: generic`): one folder `<name>/` with `AGENT.md`, `docs/`, `skills/` and
 `NOTICE.md`. Tell the agent «Read `<name>/AGENT.md` and work as that employee».
 

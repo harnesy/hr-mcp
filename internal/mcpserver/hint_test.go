@@ -37,6 +37,18 @@ func TestInstallHint(t *testing.T) {
 		t.Fatalf("client %q target %q add %q", out.Client, out.Target, out.AddServer)
 	}
 
+	call(t, cs, "install_hint", map[string]any{"client": "hermes", "id": "harnsy/sample-skills"}, &out)
+	all = strings.Join(out.Steps, "\n")
+	for _, want := range []string{`"target": "hermes"`, "sample-skills/", "distribution.yaml", "hermes profile install",
+		"--name sample-skills", "hermes -p sample-skills chat", "SOUL.md", "model"} {
+		if !strings.Contains(all, want) {
+			t.Errorf("the Hermes steps lack %q:\n%s", want, all)
+		}
+	}
+	if out.Client != "hermes" || out.Target != "hermes" || !strings.Contains(out.AddServer, "mcp_servers") {
+		t.Fatalf("client %q target %q add %q", out.Client, out.Target, out.AddServer)
+	}
+
 	call(t, cs, "install_hint", map[string]any{"client": "Some New IDE"}, &out)
 	if out.Client != "generic" || out.Target != "generic" || len(out.KnownClients) < 4 || !strings.Contains(strings.Join(out.Steps, "\n"), "<name>/AGENT.md") {
 		t.Fatalf("an unknown client gets the generic steps and the list of known ones: %+v", out)

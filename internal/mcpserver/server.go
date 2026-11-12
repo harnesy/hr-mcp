@@ -63,7 +63,7 @@ func New(src Source, o *Options) *mcp.Server {
 		Description: "Search the hr.harnsy.dev catalog of AI employees by words (a role, a skill, a need) and by department. Returns cards; read one with get_employee. No words lists everyone.",
 	}, s.search)
 	mcp.AddTool(m, &mcp.Tool{Name: "get_employee", Title: "Get an employee", Annotations: hints("Get an employee"),
-		Description: "Read one employee as the files to write for a target (generic, claude-code, openclaw): who it is, its job, its skills, its licence notice. Every file is listed with its size and SHA-256; large ones come without content: fetch each with get_employee_file. " + dataNote,
+		Description: "Read one employee as the files to write for a target (generic, claude-code, openclaw, hermes): who it is, its job, its skills, its licence notice. Every file is listed with its size and SHA-256; large ones come without content: fetch each with get_employee_file. " + dataNote,
 	}, s.employee)
 	mcp.AddTool(m, &mcp.Tool{Name: "get_employee_file", Title: "Get one file of an employee", Annotations: hints("Get one file of an employee"),
 		Description: "Read one file of an employee's tree by its path, as get_employee listed it. A file larger than one answer comes in parts: call again with offset = next_offset until next_offset is 0, and join the parts. " + dataNote,

@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/harnesy/hr-mcp/internal/catalog"
 	"github.com/harnesy/hr-mcp/internal/catalog/catalogtest"
+	"github.com/harnesy/hr-mcp/internal/hermesscan"
 	"github.com/harnesy/hr-mcp/internal/mcpserver"
 	"github.com/harnesy/hr-mcp/internal/render"
 )
@@ -136,4 +138,82 @@ func TestWholeCatalogFitsOpenClaw(t *testing.T) {
 	}
 	t.Logf("%d employees for openclaw: largest loaded file %d characters (limit %d), largest total %d (limit %d); %d of %d skill descriptions are longer than OpenClaw's advice of 160 characters on one line",
 		len(rel.Employees), largestFile, render.OpenClawFileMax, largestTotal, render.OpenClawTotalMax, longDescriptions, skills)
+}
+
+// TestWholeCatalogFitsHermes: every employee rendered for Hermes Agent would load there. Its SOUL.md trips none of
+// the patterns Hermes blocks a distribution's SOUL.md on (a hit is a text for the profile's author to change, never
+// one to force through) and stays under the smallest cap Hermes cuts a context file at; its name is a profile name
+// Hermes takes; its skills have names and descriptions Hermes takes, and none is called like the casebook skill.
+func TestWholeCatalogFitsHermes(t *testing.T) {
+	dir := realCatalog(t)
+	k, root := catalogtest.New(t), t.TempDir()
+	k.Release(t, root, k.Catalog(t, dir), nil)
+	rel, err := catalog.Load(root, k.Key, catalogtest.Host, k.Now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	profile, skill := regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,63}$`), regexp.MustCompile(`^[a-z0-9][a-z0-9._-]{0,63}$`)
+	reserved := map[string]bool{"hermes": true, "default": true, "test": true, "tmp": true, "root": true, "sudo": true}
+	largest, blocked, long := 0, 0, 0
+	for _, e := range rel.Employees {
+		tree, err := render.Render(e, render.Hermes)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !profile.MatchString(tree.Name) || reserved[tree.Name] {
+			t.Errorf("%s: %q is no profile name Hermes takes", e.Entry.ID, tree.Name)
+		}
+		seen := map[string]bool{}
+		for _, f := range tree.Files {
+			if seen[f.Path] {
+				t.Errorf("%s: %s is in the tree twice", e.Entry.ID, f.Path)
+			}
+			if seen[f.Path] = true; f.Path != tree.Persona {
+				continue
+			}
+			n := len([]rune(string(f.Content)))
+			if largest = max(largest, n); n > render.HermesSoulMax {
+				long++
+				t.Logf("%s: SOUL.md is %d characters; a model with a small context window gets it cut above %d", e.Entry.ID, n, render.HermesSoulMax)
+			}
+			if hits := hermesscan.Scan(string(f.Content)); len(hits) > 0 {
+				blocked++
+				t.Errorf("%s: Hermes would block this SOUL.md: %s", e.Entry.ID, strings.Join(hits, ", "))
+			}
+		}
+		for _, s := range e.Doc.Skills {
+			if !skill.MatchString(s.Name) || s.Name == "persona-casebook" || len([]rune(s.Description)) > 1024 || strings.TrimSpace(s.Description) == "" {
+				t.Errorf("%s: skill %q: Hermes wants a name of lowercase letters, digits, dots and dashes and a description of at most 1024 characters", e.Entry.ID, s.Name)
+			}
+		}
+	}
+	t.Logf("%d employees for hermes: %d would be blocked by the scanner (%d patterns); largest SOUL.md %d characters, %d above %d",
+		len(rel.Employees), blocked, hermesscan.Patterns(), largest, long, render.HermesSoulMax)
+}
+
+// TestWriteTrees writes every employee of HR_CATALOG rendered for every target under HR_TREES_OUT, as
+// <target>/<publisher>/<name>/<the tree>: for a stand of another agent system, and to run that system's own checks
+// (Hermes' scanner, OpenClaw's loader) over what it would be given.
+func TestWriteTrees(t *testing.T) {
+	out := os.Getenv("HR_TREES_OUT")
+	if out == "" {
+		t.Skip("HR_TREES_OUT is not set")
+	}
+	k, root := catalogtest.New(t), t.TempDir()
+	k.Release(t, root, k.Catalog(t, realCatalog(t)), nil)
+	rel, err := catalog.Load(root, k.Key, catalogtest.Host, k.Now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range rel.Employees {
+		for _, target := range render.Targets() {
+			tree, err := render.Render(e, target)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, f := range tree.Files {
+				catalogtest.Write(t, filepath.Join(out, string(target), filepath.FromSlash(e.Entry.ID), filepath.FromSlash(f.Path)), f.Content)
+			}
+		}
+	}
 }
