@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -237,23 +238,45 @@ func Write(t testing.TB, file string, b []byte) {
 	}
 }
 
-// Catalog packs every employee under dir, laid out as the catalog repository's employees/ folder
-// (<publisher>/<name>/<version>/), in the order of their ids.
+// Catalog packs the newest version of every employee under dir, laid out as the catalog repository's employees/ folder
+// (<publisher>/<name>/<version>/), in the order of their ids: what the feed lists.
 func (k *Kit) Catalog(t testing.TB, dir string) []Packed {
 	t.Helper()
 	versions, err := filepath.Glob(filepath.Join(dir, "*", "*", "*", "bundle.json"))
 	if err != nil || len(versions) == 0 {
 		t.Fatalf("%s: no employees (%v)", dir, err)
 	}
-	sort.Strings(versions)
-	var packs []Packed
+	newest := map[string]string{} // id → version
 	for _, bj := range versions {
-		vdir := filepath.Dir(bj)
-		rel, _ := filepath.Rel(dir, vdir)
+		rel, _ := filepath.Rel(dir, filepath.Dir(bj))
 		parts := strings.Split(filepath.ToSlash(rel), "/")
-		packs = append(packs, k.Pack(t, parts[0]+"/"+parts[1], parts[2], Source(t, vdir), nil))
+		if id := parts[0] + "/" + parts[1]; newest[id] == "" || semverLess(newest[id], parts[2]) {
+			newest[id] = parts[2]
+		}
+	}
+	ids := make([]string, 0, len(newest))
+	for id := range newest {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	var packs []Packed
+	for _, id := range ids {
+		packs = append(packs, k.Pack(t, id, newest[id], Source(t, filepath.Join(dir, filepath.FromSlash(id), newest[id])), nil))
 	}
 	return packs
+}
+
+// semverLess compares two MAJOR.MINOR.PATCH versions by their numbers.
+func semverLess(a, b string) bool {
+	pa, pb := strings.Split(a, "."), strings.Split(b, ".")
+	for i := 0; i < len(pa) && i < len(pb); i++ {
+		x, _ := strconv.Atoi(pa[i])
+		y, _ := strconv.Atoi(pb[i])
+		if x != y {
+			return x < y
+		}
+	}
+	return len(pa) < len(pb)
 }
 
 // Source reads a version folder in the catalog repository's layout (bundle.json, listing.json, docs/, skills/): every
