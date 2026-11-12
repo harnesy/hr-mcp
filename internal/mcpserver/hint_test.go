@@ -57,3 +57,17 @@ func TestInstallHint(t *testing.T) {
 		t.Fatal("an unknown employee must be a tool error")
 	}
 }
+
+// TestInstallHintStopsBeforeReplacingAFile: where an employee lands among a person's own files (a project, OpenClaw's
+// state directory), the steps say to stop and ask when something is already there. A skill or a subagent of the same
+// name may be the person's own.
+func TestInstallHintStopsBeforeReplacingAFile(t *testing.T) {
+	cs := connect(t, stand(t))
+	for _, client := range []string{"claude-code", "codex", "generic", "openclaw", "Some New IDE"} {
+		var out mcpserver.HintOut
+		call(t, cs, "install_hint", map[string]any{"client": client, "id": "harnsy/sample-skills"}, &out)
+		if all := strings.Join(out.Steps, "\n"); !strings.Contains(all, "already there") || !strings.Contains(all, "stop and ask the person") {
+			t.Errorf("%s: the steps do not say to stop when a file or folder is already there:\n%s", client, all)
+		}
+	}
+}

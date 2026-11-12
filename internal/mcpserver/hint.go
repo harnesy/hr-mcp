@@ -49,9 +49,9 @@ var clientHints = map[string]clientHint{
 // places says, per target, which file tells who the employee is and where its files go; %[1]s is its name.
 var places = map[render.Target]struct{ persona, where string }{
 	render.Generic: {"%[1]s/AGENT.md",
-		"Write every file at its path under the project's root: the employee lands in the folder %[1]s/."},
+		"Write every file at its path under the project's root: the employee lands in the folder %[1]s/. If a file is already there with other content, stop and ask the person before replacing it."},
 	render.ClaudeCode: {".claude/agents/%[1]s.md",
-		"Write every file at its path under the project's root: the subagent is .claude/agents/%[1]s.md, its skills go to .claude/skills/, its notice and casebook to harnsy-hr/%[1]s/. Claude Code asks the person before a write under .claude/: wait for the yes, and do not write those files another way."},
+		"Write every file at its path under the project's root: the subagent is .claude/agents/%[1]s.md, its skills go to .claude/skills/, its notice and casebook to harnsy-hr/%[1]s/. Claude Code asks the person before a write under .claude/: wait for the yes, and do not write those files another way. If a file is already there with other content (a subagent or a skill of the same name may be the person's own), stop and ask the person before replacing it."},
 	render.OpenClaw: {"workspace-%[1]s/SOUL.md and workspace-%[1]s/AGENTS.md",
 		"Write every file at its path under OpenClaw's state directory (~/.openclaw, or $OPENCLAW_STATE_DIR when it is set): the employee lands in a workspace of its own, workspace-%[1]s/, with SOUL.md (who it is), AGENTS.md (its job), IDENTITY.md and skills/. Never write these files into the workspace of an agent that already exists: its own SOUL.md and AGENTS.md would be replaced. If the folder workspace-%[1]s/ is already there, stop and ask the person."},
 	render.Hermes: {"%[1]s/SOUL.md",
