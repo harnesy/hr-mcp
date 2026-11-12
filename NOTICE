@@ -1,15 +1,15 @@
 hr-mcp
 Copyright (c) 2026 Pavel Buchnev (harnsy). Licensed under the MIT licence (see LICENSE).
 
-A built binary of this project contains the following libraries. Each is under its own licence; the text is in the
-LICENSE file of that module.
+A built binary of this project contains the following libraries. Each is under its own licence. Full texts:
+THIRD_PARTY_LICENSES.
 
-- github.com/modelcontextprotocol/go-sdk — the MCP project (MIT, in transition to Apache-2.0: see its LICENSE)
+- github.com/modelcontextprotocol/go-sdk — the MCP project (MIT and Apache-2.0, mixed: see its LICENSE)
 - github.com/google/jsonschema-go — JSON Schema Go Project Authors (MIT)
 - github.com/segmentio/asm — Segment (MIT)
 - github.com/segmentio/encoding — Segment.io, Inc. (MIT)
-- github.com/yosida95/uritemplate — Kohei YOSHIDA (BSD-style: see its LICENSE)
-- golang.org/x/oauth2, golang.org/x/sync, golang.org/x/sys, golang.org/x/time — The Go Authors (BSD-style: see their LICENSE)
-- The Go standard library — The Go Authors (BSD-style)
+- github.com/yosida95/uritemplate — Kohei YOSHIDA (BSD 3-clause)
+- golang.org/x/oauth2, golang.org/x/sync, golang.org/x/sys, golang.org/x/time — The Go Authors (BSD 3-clause)
+- The Go standard library — The Go Authors (BSD 3-clause)
 
 Employees of the hr.harnsy.dev catalog are not part of this project and are not under its licence.

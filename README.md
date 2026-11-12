@@ -40,7 +40,7 @@ For any other agent that reads files (`target: generic`): one folder `<name>/` w
 
 ## Tools
 
-All four are read-only.
+By design all four only read: they write nothing on the server.
 
 | Tool | What it does |
 |---|---|
@@ -66,10 +66,11 @@ until you start the employee.
 The code in this repository is under the MIT licence (`LICENSE`); the libraries it is built with are listed in
 `NOTICE`. The employees are not part of this repository. Each has its own licence, most often CC BY 4.0, and arrives
 with a `NOTICE.md` that names its author, licence, source and the works it is built on: keep that file with the
-employee. Each skill keeps its own `LICENSE` file where it has one.
+employee. An employee's text is under the licence its `NOTICE.md` names, not under this repository's MIT licence. Each
+skill keeps its own `LICENSE` file where it has one.
 
-This project is not affiliated with or endorsed by OpenClaw, Nous Research (Hermes Agent), Anthropic or the MCP
-project; their names are used only to say what it works with.
+This project is not affiliated with or endorsed by OpenClaw, Nous Research (Hermes Agent), Anthropic, OpenAI or the
+MCP project; their names are used only to say what it works with.
 
 ## Run your own
 

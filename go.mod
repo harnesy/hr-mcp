@@ -1,6 +1,6 @@
 module github.com/harnesy/hr-mcp
 
-go 1.27.4
+go 1.25.0
 
 require github.com/modelcontextprotocol/go-sdk v1.8.0
 
