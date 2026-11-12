@@ -14,6 +14,9 @@ CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=<version>" -o h
 
 Build it where the toolchain is new enough and copy the file; `go.mod` names the toolchain it was tested with.
 
+The binary contains the libraries' code, and their licences ask that the notices travel with every copy: wherever
+the binary goes, `LICENSE`, `NOTICE` and `THIRD_PARTY_LICENSES` go with it, in the same folder.
+
 ## Install
 
 1. A system user of its own, with no shell and no home. It must be able to read the catalog's root and must not be
@@ -58,6 +61,13 @@ head -c 70000 /dev/zero | curl -s -o /dev/null -w '%{http_code}\n' -X POST $H \
 `403` on the first call means the proxy passes the public `Host`. `405` on a POST means the host's method rule stands
 in front of the location. `503` means no release verifies: read the service's log for the reason (a wrong `@PUB@` or
 `@KID@`, an expired feed, a bundle on another host than `@HOST@`).
+
+## The registry entry
+
+`server.json` at the repository root is the entry for the MCP Registry: the name `dev.harnsy/hr` and the remote
+endpoint, nothing to install. The file alone publishes nothing. What is published there is dedicated to the public
+domain and a published version cannot be removed, so before a publish set `version` to the release being announced and
+read the text once more. `go test ./internal/registry` keeps the file within the registry's schema.
 
 ## Take it away
 
