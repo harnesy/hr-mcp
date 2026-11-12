@@ -5,8 +5,10 @@ package render
 
 import (
 	"fmt"
+	"path"
 	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/harnesy/hr-mcp/internal/catalog"
 )
@@ -56,20 +58,39 @@ type layout struct {
 	skillRef func(skill string) string // how the persona file points at a skill
 }
 
-// Render makes the employee's tree for a target.
+// Render makes the employee's tree for a target. It refuses a tree with a path that would leave the place it is
+// written to.
 func Render(e *catalog.Employee, t Target) (Tree, error) {
 	name := shortName(e)
+	var tree Tree
 	switch t {
 	case Generic:
-		return generic(e, name), nil
+		tree = generic(e, name)
 	case ClaudeCode:
-		return claudeCode(e, name), nil
+		tree = claudeCode(e, name)
 	case OpenClaw:
-		return openClaw(e, name), nil
+		tree = openClaw(e, name)
 	case Hermes:
-		return hermes(e, name), nil
+		tree = hermes(e, name)
+	default:
+		return Tree{}, fmt.Errorf("target %q: want one of %s", t, targetList())
 	}
-	return Tree{}, fmt.Errorf("target %q: want one of %s", t, targetList())
+	for _, f := range tree.Files {
+		if !inside(f.Path) {
+			return Tree{}, fmt.Errorf("%.130q: a path that would leave the place the employee is installed to", f.Path)
+		}
+	}
+	return tree, nil
+}
+
+// inside reports whether a tree's path stays in the place the tree is written to: relative, clean, with forward
+// slashes, without «..» and without a control character. The catalog refuses a release that names anything outside
+// its grammar; this is a second gate that does not rest on the first.
+func inside(p string) bool {
+	if p == "" || p == "." || path.IsAbs(p) || path.Clean(p) != p || p == ".." || strings.HasPrefix(p, "../") {
+		return false
+	}
+	return !strings.ContainsFunc(p, func(r rune) bool { return r == '\\' || unicode.IsControl(r) })
 }
 
 func targetList() string {
@@ -102,12 +123,12 @@ func assemble(e *catalog.Employee, name string, l layout, own ...File) Tree {
 		t.Job = t.Persona
 	}
 	t.Files = append(t.Files, File{l.notice, []byte("# Notice\n\n" + t.Notice)})
-	for path, b := range e.Files {
-		switch rest, isSkill := strings.CutPrefix(path, "skills/"); {
+	for name, b := range e.Files {
+		switch rest, isSkill := strings.CutPrefix(name, "skills/"); {
 		case isSkill:
 			skill, file, _ := strings.Cut(rest, "/")
 			t.Files = append(t.Files, File{l.skillDir(skill) + "/" + file, b})
-		case path == casebookFile:
+		case name == casebookFile:
 			t.Files = append(t.Files, File{l.casebook, b})
 		}
 	}
@@ -115,6 +136,6 @@ func assemble(e *catalog.Employee, name string, l layout, own ...File) Tree {
 	return t
 }
 
-const casebookFile = "docs/persona-casebook.md"
+const casebookFile = catalog.CasebookFile
 
 func hasCasebook(e *catalog.Employee) bool { _, ok := e.Files[casebookFile]; return ok }

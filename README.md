@@ -79,8 +79,9 @@ By design all four only read: they write nothing on the server.
 
 ## What is checked, and what is not
 
-The server serves only a catalog release that verifies: the feed's Ed25519 signature, and every bundle's size, hashes
-and catalog signature. A release that fails is never served.
+The server serves only a catalog release that verifies: the feed's Ed25519 signature, every bundle's size, hashes
+and catalog signature, and every name in it (an employee's id, its version, the files of its bundle) against the
+catalog's own rules for names. A release that fails is never served.
 
 What reaches your agent is text over TLS: it does not carry the catalog's signature. Every answer names the bundle's
 URL and SHA-256 and each file's SHA-256, so a written file can be compared. For an install that checks the signature

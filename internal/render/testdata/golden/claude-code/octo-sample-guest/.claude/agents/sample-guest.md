@@ -1,5 +1,5 @@
 ---
-name: sample-guest
+name: "sample-guest"
 description: "Sample guest: Writes this week's notice in plain words: \"what, when, where\"."
 ---
 

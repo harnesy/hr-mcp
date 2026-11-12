@@ -13,7 +13,8 @@ import (
 
 // Load reads the release in dir (v1/feed.json, v1/feed.json.sig and the bundle files at their feed urls) and verifies
 // all of it under key, for the catalog at host, as of now. Any fault refuses the whole release: nothing of a release
-// that does not verify is served.
+// that does not verify is served. A name outside the catalog's grammar (an id, a version, a file of a bundle) is such
+// a fault, signed or not.
 func Load(dir string, key Key, host string, now time.Time) (*Release, error) {
 	fb, err := readLimited(filepath.Join(dir, "v1", "feed.json"), MaxFeed)
 	if err != nil {
@@ -40,8 +41,14 @@ func Load(dir string, key Key, host string, now time.Time) (*Release, error) {
 		revoked[v] = true
 	}
 	for _, e := range r.Feed.Bundles {
-		if e.Kind != "employee" || revoked[e.ID+"@"+e.Version] {
-			continue // bundle v1 reads employees only; a revoked version is never served
+		if e.Kind != "employee" {
+			continue // bundle v1 reads employees only
+		}
+		if err := checkNames(e); err != nil {
+			return nil, err
+		}
+		if revoked[e.ID+"@"+e.Version] {
+			continue // a revoked version is never served
 		}
 		rel, ok := localPath(e.URL, host)
 		if !ok {

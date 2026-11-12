@@ -22,7 +22,7 @@ func claudeCode(e *catalog.Employee, name string) Tree {
 	if s := e.Entry.Summary; s != "" {
 		description += ": " + s
 	}
-	body := "---\nname: " + name + "\ndescription: " + yamlString(description) + "\n---\n\n" +
+	body := "---\nname: " + yamlString(name) + "\ndescription: " + yamlString(description) + "\n---\n\n" +
 		"# " + title(e) + "\n\n" + intro(e) + who(e) + job(e, l) + creditLine(e, l)
 	return assemble(e, name, l, File{l.persona, []byte(body)})
 }

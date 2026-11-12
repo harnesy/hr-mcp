@@ -1,5 +1,5 @@
 ---
-name: sample-scripts
+name: "sample-scripts"
 description: "Sample binder: Makes shelf labels that match the list."
 ---
 

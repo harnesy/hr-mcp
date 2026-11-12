@@ -1,5 +1,5 @@
 ---
-name: sample-skills
+name: "sample-skills"
 description: "Sample archivist: Audits the shelves and keeps the loan ledger balanced."
 ---
 

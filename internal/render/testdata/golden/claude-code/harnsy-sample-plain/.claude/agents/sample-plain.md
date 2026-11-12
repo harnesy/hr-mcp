@@ -1,5 +1,5 @@
 ---
-name: sample-plain
+name: "sample-plain"
 description: "Sample librarian: Keeps the shelves in order and finds the book you meant."
 ---
 

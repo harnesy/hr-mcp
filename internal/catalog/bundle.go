@@ -76,6 +76,9 @@ func openBundle(key Key, host string, e Entry, file []byte) (*Employee, error) {
 		return nil, fmt.Errorf("manifest names %s@%s (%s v%d, %s)", m.ID, m.Version, m.Format, m.FormatVersion, m.Kind)
 	}
 	for name, sum := range m.Files {
+		if !bundlePath(name) {
+			return nil, fmt.Errorf("%.130q is not a file a bundle carries", name)
+		}
 		b, ok := all[name]
 		if !ok || strings.HasPrefix(name, "signatures/") || hexSum(b) != sum {
 			return nil, fmt.Errorf("%s missing or its sha256 differs", name)
