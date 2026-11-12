@@ -95,7 +95,8 @@ func (s *server) tree(id, version, target string) (*catalog.Release, *catalog.Em
 }
 
 // hermesTakes refuses a tree for Hermes Agent whose SOUL.md Hermes would block: on one hit of its scanner Hermes
-// leaves the whole file out and tells the person nothing, so the employee would run without being itself.
+// leaves the whole file out and tells the person nothing, so the employee would run without being itself. This keeps
+// a broken install away; it is not a check that the text is safe, and the other targets are handed out all the same.
 func hermesTakes(e *catalog.Employee, t render.Tree) error {
 	if t.Target != render.Hermes {
 		return nil

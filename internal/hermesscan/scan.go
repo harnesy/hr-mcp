@@ -3,8 +3,11 @@
 // Hermes scans a SOUL.md that a profile distribution installed each time it builds the prompt, and on any hit
 // leaves the whole file out. The patterns below are the ones of its scanner for context files (Hermes Agent v0.23.1,
 // tools/threat_patterns.py, the entries of scope "all" and "context"; github.com/NousResearch/hermes-agent,
-// © 2025 Nous Research, MIT licence: its text is the LICENSE file in this folder). They are here so that a rendered employee can be checked before it reaches a person's Hermes; the
-// scanner in Hermes itself stays the judge.
+// © 2025 Nous Research, MIT licence: its text is the LICENSE file in this folder). They are here so that a rendered
+// employee can be checked before it reaches a person's Hermes; the scanner in Hermes itself stays the judge.
+//
+// It is a compatibility check, not a protection. A text that passes is one Hermes would load, nothing more: it is not
+// thereby safe to follow, and the same employee is handed out for the other targets whether it passes or not.
 //
 // Three differences from the original, each on the strict side or without effect on ordinary text: a repeat of
 // {0,2048} is written * (Go's limit is 1000); \w is written out with letters and digits of every script, and every
