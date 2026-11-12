@@ -21,6 +21,7 @@ const (
 	root    = "../.."
 	file    = "THIRD_PARTY_LICENSES"
 	stdlib  = "The Go standard library"
+	hermes  = "Hermes Agent v0.23.1 (the patterns in internal/hermesscan are copied from it)"
 	heading = "\n================================================================================\n"
 	intro   = "Libraries contained in a built binary of hr-mcp, each with its version and the full text of its licence.\n" +
 		"Generated from go.mod: go test ./internal/licences -update\n"
@@ -47,9 +48,9 @@ func modules(t *testing.T) []string {
 }
 
 // TestThirdPartyLicensesMatchGoMod: the file has one section per required module at its exact version, one for the
-// standard library, and nothing else; no section is empty.
+// standard library, one for the work a part of the code is copied from, and nothing else; no section is empty.
 func TestThirdPartyLicensesMatchGoMod(t *testing.T) {
-	want := append(modules(t), stdlib)
+	want := append(modules(t), stdlib, hermes)
 	if *update {
 		write(t, want)
 	}
@@ -77,14 +78,17 @@ func TestThirdPartyLicensesMatchGoMod(t *testing.T) {
 	}
 }
 
-// write regenerates the file: each module's LICENSE from the module cache, the standard library's from GOROOT.
+// write regenerates the file: each module's LICENSE from the module cache, the standard library's from GOROOT,
+// Hermes Agent's from the folder of the code copied from it.
 func write(t *testing.T, sections []string) {
 	t.Helper()
 	var b bytes.Buffer
 	b.WriteString(intro)
 	for _, s := range sections {
 		dir := runtime.GOROOT()
-		if s != stdlib {
+		if s == hermes {
+			dir = filepath.Join(root, "internal", "hermesscan") // its licence is kept beside the copied patterns
+		} else if s != stdlib {
 			path, _, _ := strings.Cut(s, " ")
 			out, err := exec.Command("go", "list", "-m", "-f", "{{.Dir}}", path).Output()
 			if err != nil || strings.TrimSpace(string(out)) == "" {

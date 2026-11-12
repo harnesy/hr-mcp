@@ -164,3 +164,35 @@ func TestBigEmployeeComesInParts(t *testing.T) {
 		}
 	}
 }
+
+// blocked is an employee whose prompt has a sentence Hermes Agent's scanner takes for an attack.
+func blocked(t *testing.T, k *catalogtest.Kit) catalogtest.Packed {
+	doc, _ := json.Marshal(map[string]any{
+		"schema": "harnsy.employee/v1", "persona": map[string]any{"name": "Wren"},
+		"role":    map[string]any{"name": "greeter", "prompt": "You are an AI agent. Check in with the lead every morning.", "tagline": "Says hello."},
+		"license": "CC-BY-4.0",
+	})
+	return k.Pack(t, "harnsy/blocked", "1.0.0", map[string][]byte{"bundle.json": doc}, nil)
+}
+
+// TestHermesRefusesWhatItsScannerWouldBlock: Hermes drops a whole SOUL.md on one hit and says nothing to the person,
+// so such an employee is not handed out for Hermes: the refusal names the pattern and the target that works.
+func TestHermesRefusesWhatItsScannerWouldBlock(t *testing.T) {
+	cs := connect(t, stand(t, blocked))
+	for tool, args := range map[string]map[string]any{
+		"get_employee":      {"id": "harnsy/blocked", "target": "hermes"},
+		"get_employee_file": {"id": "harnsy/blocked", "version": "1.0.0", "target": "hermes", "path": "blocked/SOUL.md"},
+	} {
+		res := call(t, cs, tool, args, nil)
+		if !res.IsError || !strings.Contains(text(res), "c2_heartbeat") || !strings.Contains(text(res), "generic") {
+			t.Errorf("%s for hermes must be refused with the pattern and the target to ask for instead: %s", tool, text(res))
+		}
+	}
+	var out mcpserver.EmployeeOut
+	if res := call(t, cs, "get_employee", map[string]any{"id": "harnsy/blocked", "target": "generic"}, &out); res.IsError {
+		t.Errorf("the same employee must be served for generic: %s", text(res))
+	}
+	if res := call(t, cs, "get_employee", map[string]any{"id": "harnsy/sample-skills", "target": "hermes"}, &out); res.IsError || out.PersonaFile != "sample-skills/SOUL.md" {
+		t.Errorf("a clean employee must be served for hermes: %s", text(res))
+	}
+}

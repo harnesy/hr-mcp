@@ -39,9 +39,13 @@ func TestWholeCatalog(t *testing.T) {
 	}
 	cs := connect(t, s)
 	rel := s.Release()
-	largest, files, fetched := 0, 0, 0
+	largest, files, fetched, refused := 0, 0, 0, 0
 	for _, e := range rel.Employees {
 		for _, target := range render.Targets() {
+			if target == render.Hermes && hermesBlocks(t, e) {
+				refused++ // not handed out for Hermes; TestWholeCatalogFitsHermes names it
+				continue
+			}
 			var out mcpserver.EmployeeOut
 			res := call(t, cs, "get_employee", map[string]any{"id": e.Entry.ID, "target": string(target)}, &out)
 			n := len(text(res))
@@ -78,7 +82,21 @@ func TestWholeCatalog(t *testing.T) {
 			}
 		}
 	}
-	t.Logf("%d employees × %d targets: %d files, %d fetched one by one, largest answer %d bytes", len(rel.Employees), len(render.Targets()), files, fetched, largest)
+	t.Logf("%d employees × %d targets: %d files, %d fetched one by one, largest answer %d bytes; %d not handed out for Hermes", len(rel.Employees), len(render.Targets()), files, fetched, largest, refused)
+}
+
+// hermesBlocks says whether Hermes' scanner would block the employee's SOUL.md.
+func hermesBlocks(t *testing.T, e *catalog.Employee) bool {
+	tree, err := render.Render(e, render.Hermes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range tree.Files {
+		if f.Path == tree.Persona {
+			return len(hermesscan.Scan(string(f.Content))) > 0
+		}
+	}
+	return false
 }
 
 // TestWriteStand writes a catalog root for a local stand of the real binary: HR_STAND_ROOT/current with the catalog

@@ -7,11 +7,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/harnesy/hr-mcp/internal/catalog"
+	"github.com/harnesy/hr-mcp/internal/hermesscan"
 	"github.com/harnesy/hr-mcp/internal/render"
 )
 
@@ -87,7 +89,27 @@ func (s *server) tree(id, version, target string) (*catalog.Release, *catalog.Em
 		target = string(render.Generic)
 	}
 	t, err := render.Render(e, render.Target(target))
+	if err == nil {
+		err = hermesTakes(e, t)
+	}
 	return rel, e, t, err
+}
+
+// hermesTakes refuses a tree for Hermes Agent whose SOUL.md Hermes would block: on one hit of its scanner Hermes
+// leaves the whole file out and tells the person nothing, so the employee would run without being itself.
+func hermesTakes(e *catalog.Employee, t render.Tree) error {
+	if t.Target != render.Hermes {
+		return nil
+	}
+	for _, f := range t.Files {
+		if f.Path != t.Persona {
+			continue
+		}
+		if hits := hermesscan.Scan(string(f.Content)); len(hits) > 0 {
+			return fmt.Errorf("%s cannot be installed in Hermes Agent yet: Hermes would refuse its SOUL.md (%s). Ask for target generic instead", e.Entry.ID, strings.Join(hits, ", "))
+		}
+	}
+	return nil
 }
 
 func (s *server) employee(_ context.Context, _ *mcp.CallToolRequest, in EmployeeIn) (*mcp.CallToolResult, EmployeeOut, error) {

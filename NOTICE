@@ -11,5 +11,7 @@ THIRD_PARTY_LICENSES.
 - github.com/yosida95/uritemplate — Kohei YOSHIDA (BSD 3-clause)
 - golang.org/x/oauth2, golang.org/x/sync, golang.org/x/sys, golang.org/x/time — The Go Authors (BSD 3-clause)
 - The Go standard library — The Go Authors (BSD 3-clause)
+- Hermes Agent (github.com/NousResearch/hermes-agent) — Nous Research (MIT): the patterns in internal/hermesscan are
+  copied from its scanner
 
 Employees of the hr.harnsy.dev catalog are not part of this project and are not under its licence.
