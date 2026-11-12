@@ -6,13 +6,17 @@ server in front ends TLS and limits the request rate.
 
 ## Build
 
-Go 1.25 or newer (the MCP SDK needs it). The binary has no C parts and runs on a machine without Go:
+Build with the newest patch release of a supported Go line, today 1.27.4: `go.mod` names it as the toolchain. The
+language floor stays at Go 1.25, which the MCP SDK needs, but do not build with an old patch release: the standard
+library (net/http, crypto) is part of the binary, and an old one carries its known advisories. Write the Go version of
+the binary into the deploy note (`go version harnsy-hr-mcp` prints it). The binary has no C parts and runs on a machine
+without Go:
 
 ```
 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=<version>" -o harnsy-hr-mcp ./cmd/harnsy-hr-mcp
 ```
 
-Build it where the toolchain is new enough and copy the file; `go.mod` names the toolchain it was tested with.
+Build it where that toolchain is installed and copy the file.
 
 The binary contains the libraries' code, and their licences ask that the notices travel with every copy: wherever
 the binary goes, `LICENSE`, `NOTICE` and `THIRD_PARTY_LICENSES` go with it, in the same folder.
