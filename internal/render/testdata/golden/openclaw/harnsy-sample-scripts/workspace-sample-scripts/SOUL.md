@@ -8,4 +8,4 @@ Cheerful and careful with glue.
 
 ---
 
-Sample binder 2.0.1 by harnsy (Pavel Buchnev), © 2026 Pavel Buchnev (harnsy). Licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Source: https://hr.harnsy.dev/e/harnsy/sample-scripts. Changes: rendered for openclaw. Provided as is, without warranty of any kind (see the licence).
+Sample binder 2.0.1 by harnsy (Pavel Buchnev), © 2026 Pavel Buchnev (harnsy). Licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Source: https://hr.harnsy.dev/e/harnsy/sample-scripts. Changes: assembled into an OpenClaw agent workspace. Provided as is, without warranty of any kind (see the licence).

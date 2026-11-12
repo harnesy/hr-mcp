@@ -20,4 +20,4 @@ Patient and orderly. Would rather ask one more question than shelve a book in th
 
 ---
 
-Sample librarian 1.0.0 by harnsy (Pavel Buchnev), © 2026 Pavel Buchnev (harnsy). Licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Source: https://hr.harnsy.dev/e/harnsy/sample-plain. Changes: rendered for openclaw. Provided as is, without warranty of any kind (see the licence).
+Sample librarian 1.0.0 by harnsy (Pavel Buchnev), © 2026 Pavel Buchnev (harnsy). Licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Source: https://hr.harnsy.dev/e/harnsy/sample-plain. Changes: assembled into an OpenClaw agent workspace. Provided as is, without warranty of any kind (see the licence).

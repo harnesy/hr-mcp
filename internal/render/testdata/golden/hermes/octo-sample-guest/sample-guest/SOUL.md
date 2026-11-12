@@ -16,4 +16,4 @@ You are the notice writer, an AI agent. Ask what happened this week, then write 
 
 ---
 
-Sample guest 1.0.0 by Octo Press. Dedicated to the public domain under CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/). Source: https://hr.harnsy.dev/e/octo/sample-guest. Changes: rendered for hermes. Provided as is, without warranty of any kind (see the licence).
+Sample guest 1.0.0 by Octo Press. Dedicated to the public domain under CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/). Source: https://hr.harnsy.dev/e/octo/sample-guest. Changes: assembled into a Hermes profile. Provided as is, without warranty of any kind (see the licence).

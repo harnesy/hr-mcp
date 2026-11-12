@@ -1,6 +1,6 @@
 # Notice
 
-Sample archivist 1.2.0 by harnsy (Pavel Buchnev), © 2026 Pavel Buchnev (harnsy). Licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Source: https://hr.harnsy.dev/e/harnsy/sample-skills. Changes: rendered for hermes. Provided as is, without warranty of any kind (see the licence).
+Sample archivist 1.2.0 by harnsy (Pavel Buchnev), © 2026 Pavel Buchnev (harnsy). Licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Source: https://hr.harnsy.dev/e/harnsy/sample-skills. Changes: assembled into a Hermes profile. Provided as is, without warranty of any kind (see the licence).
 
 Built on:
 - A Made-up Guide to Shelves — Example Author, https://example.org/shelves, CC-BY-4.0, modified

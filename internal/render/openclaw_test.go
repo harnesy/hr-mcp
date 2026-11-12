@@ -43,7 +43,7 @@ func TestOpenClawWorkspace(t *testing.T) {
 			}
 		}
 		for _, f := range []string{"SOUL.md", "AGENTS.md"} {
-			if last := lastLine(files[f]); !strings.Contains(last, e.Entry.CVURL) || !strings.Contains(last, "rendered for openclaw") {
+			if last := lastLine(files[f]); !strings.Contains(last, e.Entry.CVURL) || !strings.Contains(last, "assembled into an OpenClaw agent workspace") {
 				t.Errorf("%s: %s must end with the credit line, ends with %q", e.Entry.ID, f, last)
 			}
 		}

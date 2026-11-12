@@ -22,7 +22,7 @@ func hermes(e *catalog.Employee, name string) Tree {
 	home := name + "/"
 	publisher, _, _ := strings.Cut(e.Entry.ID, "/")
 	skills := home + "skills/" + publisher + "/"
-	l := layout{target: Hermes, change: "rendered for hermes", inside: home,
+	l := layout{target: Hermes, change: "assembled into a Hermes profile", inside: home,
 		persona: home + "SOUL.md", notice: home + "NOTICE.md",
 		casebook: skills + casebookSkill + "/references/persona-casebook.md", cases: "your skill `" + casebookSkill + "`",
 		skillDir: func(skill string) string { return skills + skill },

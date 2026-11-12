@@ -1,6 +1,6 @@
 # Notice
 
-Sample binder 2.0.1 by harnsy (Pavel Buchnev), © 2026 Pavel Buchnev (harnsy). Licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Source: https://hr.harnsy.dev/e/harnsy/sample-scripts. Changes: rendered for hermes. Provided as is, without warranty of any kind (see the licence).
+Sample binder 2.0.1 by harnsy (Pavel Buchnev), © 2026 Pavel Buchnev (harnsy). Licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Source: https://hr.harnsy.dev/e/harnsy/sample-scripts. Changes: assembled into a Hermes profile. Provided as is, without warranty of any kind (see the licence).
 
 Note from harnsy: No rights in the names of the people mentioned are granted or implied.
 

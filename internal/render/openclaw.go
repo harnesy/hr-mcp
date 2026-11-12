@@ -20,7 +20,7 @@ const (
 // that installs them, whose own SOUL.md and AGENTS.md have the same names.
 func openClaw(e *catalog.Employee, name string) Tree {
 	home := "workspace-" + name + "/"
-	l := layout{target: OpenClaw, change: "rendered for openclaw", inside: home,
+	l := layout{target: OpenClaw, change: "assembled into an OpenClaw agent workspace", inside: home,
 		persona: home + "SOUL.md", job: home + "AGENTS.md", notice: home + "NOTICE.md", casebook: home + casebookFile,
 		skillDir: func(skill string) string { return home + "skills/" + skill },
 		skillRef: func(skill string) string { return "`" + skill + "` (a skill of this workspace)" }}
