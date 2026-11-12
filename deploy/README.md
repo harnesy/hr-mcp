@@ -39,6 +39,9 @@ the binary goes, `LICENSE`, `NOTICE` and `THIRD_PARTY_LICENSES` go with it, in t
 - Every 30 s (`--every`) it looks at `<root>/current`. A new release is verified whole (the feed's signature, each
   bundle's size, hashes and catalog signature) before it replaces the one in memory. A release that fails is not
   loaded: the last good one stays and the reason is logged.
+- When `current` moves back to a release with a lower `seq` than one served since the start, the release is served
+  (a rollback by the publisher works) and the log says so at error level, with both numbers. If nobody rolled back,
+  someone else can write to the catalog's root: an older release may list a version revoked since.
 - Past the feed's `expires` it serves nothing and answers `503` with `Retry-After`, as it does before the first good
   release. So the job that re-signs the feed is a dependency of this service.
 - Log (stderr, JSON lines): the release it loaded (`seq`, how many employees, `expires`), each tool call (the tool, the

@@ -60,13 +60,7 @@ func run(args []string) error {
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
-	go store.Run(ctx, *every, func(err error) {
-		if err != nil {
-			log.Error("catalog", "error", err.Error())
-		} else if rel := store.Release(); rel != nil {
-			log.Info("catalog", "seq", rel.Feed.Seq, "employees", len(rel.Employees), "expires", rel.Feed.Expires)
-		}
-	})
+	go store.Run(ctx, *every, func(err error) { reportCatalog(log, store, err) })
 
 	srv := &http.Server{Addr: *listen, Handler: mcpserver.Handler(store, &mcpserver.Options{Endpoint: *endpoint, Version: version, Logger: log}),
 		ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second,
@@ -82,4 +76,21 @@ func run(args []string) error {
 		return err
 	}
 	return nil
+}
+
+// reportCatalog logs what the store took: a fault, or the release it serves now. A release older than one served
+// before is served (the publisher may roll back) and logged as an error: it may list a version revoked since, and if
+// the publisher did not roll back, someone else moved the catalog's current.
+func reportCatalog(log *slog.Logger, store *catalog.Store, err error) {
+	if err != nil {
+		log.Error("catalog", "error", err.Error())
+		return
+	}
+	if rel := store.Release(); rel != nil {
+		log.Info("catalog", "seq", rel.Feed.Seq, "employees", len(rel.Employees), "expires", rel.Feed.Expires)
+	}
+	if seq, highest, behind := store.Behind(); behind {
+		log.Error("catalog: current points at an OLDER release than one served before; it is served. Check that the publisher rolled back",
+			"seq", seq, "highest_seq_served", highest)
+	}
 }

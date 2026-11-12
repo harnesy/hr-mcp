@@ -21,6 +21,20 @@ type Store struct {
 	relDir  string // the release directory rel was loaded from
 	failDir string // the release directory that last failed, and why: not verified again until current moves
 	failErr error
+	highest int64 // the highest feed seq of a verified release held since the start
+}
+
+// Behind tells whether the release held is older than one this store held before: its feed seq, the highest seq of a
+// verified release since the start, and whether the first is below the second. current moved back: a rollback by the
+// publisher, which is served, or an old release put back by someone else, with a version revoked since. The store
+// cannot tell the two apart, so it serves the release and the one who runs the server is told.
+func (s *Store) Behind() (seq, highest int64, behind bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.rel == nil {
+		return 0, s.highest, false
+	}
+	return s.rel.Feed.Seq, s.highest, s.rel.Feed.Seq < s.highest
 }
 
 // NewStore makes a store for the catalog under root. It holds nothing until Refresh.
@@ -63,23 +77,32 @@ func (s *Store) Refresh() error {
 		return s.failErr
 	}
 	s.rel, s.relDir, s.failDir, s.failErr = rel, dir, "", nil
+	s.highest = max(s.highest, rel.Feed.Seq)
 	return nil
 }
 
-// Run refreshes every interval until ctx is done and reports each change of outcome: a fault once, not on every tick.
+// held is the directory of the release held.
+func (s *Store) held() string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.relDir
+}
+
+// Run refreshes every interval until ctx is done and reports each change of outcome: a release that was loaded (nil),
+// a fault once and not on every tick.
 func (s *Store) Run(ctx context.Context, every time.Duration, report func(error)) {
 	last := ""
 	tick := time.NewTicker(every)
 	defer tick.Stop()
 	for {
-		msg := ""
 		err := s.Refresh()
+		outcome := "serving " + s.held()
 		if err != nil {
-			msg = err.Error()
+			outcome = err.Error()
 		}
-		if msg != last {
+		if outcome != last {
 			report(err)
-			last = msg
+			last = outcome
 		}
 		select {
 		case <-ctx.Done():
